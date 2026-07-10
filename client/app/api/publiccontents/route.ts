@@ -8,7 +8,7 @@ export async function GET() {
 
   try {
     const contents = await Content.find({ isPublished: true }).select(
-      "title caption userId created_at content"
+      "title caption userId created_at content upvotes"
     );
 
     // Fetch user details for each content
@@ -25,6 +25,7 @@ export async function GET() {
           content: content.content,
           created_at: content.created_at,
           userId: content.userId,
+          upvotes: content.upvotes || [],
           userName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
         };
       })
