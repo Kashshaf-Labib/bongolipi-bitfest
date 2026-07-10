@@ -14,9 +14,12 @@ export const GET = async (req: NextRequest, {params}: {params: Promise<{sessionI
         { status: 401 },
       );
     }
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     await dbConnect();
-    const contents = await Chat.find({ sessionId });
+    const contents = await Chat.find({ sessionId, userId });
     return NextResponse.json(contents);
   } catch (error) {
     console.log(error);
