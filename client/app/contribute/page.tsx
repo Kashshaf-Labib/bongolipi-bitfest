@@ -1,6 +1,5 @@
 "use client";
 
-import AudioRecorder from "@/components/common/AudioRecorder";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -72,7 +71,7 @@ export default function Contribute() {
             <textarea id="banglish" className="p-4 shadow bg-white rounded border min-h-20 w-full mb-4" placeholder="Ekhane banglish likhun..." value={banglish} onChange={(e) => setBanglish(e.target.value)}></textarea>
 
             <label className="font-semibold" htmlFor="bangla">Bangla Text</label>
-            <textarea id="banglish" className="p-4 shadow bg-white rounded border min-h-20 w-full mb-4" placeholder="এখানে বাংলা লিখুন..." value={bangla} onChange={(e) => setBangla(e.target.value)}></textarea>
+            <textarea id="bangla" className="p-4 shadow bg-white rounded border min-h-20 w-full mb-4" placeholder="এখানে বাংলা লিখুন..." value={bangla} onChange={(e) => setBangla(e.target.value)}></textarea>
 
             <button onClick={onSubmit} className="bg-primary px-4 py-2 rounded text-white" disabled={loading}>{loading ? "Please wait..." : "Submit"}</button>
         </div>
@@ -98,7 +97,7 @@ export default function Contribute() {
                                             <td className="p-2 border text-center">{ index + 1}</td>
                                             <td className="p-2 border">{ contribution.banglish_text}</td>
                                             <td className="p-2 border">{ contribution.bangla_text}</td>
-                                            <td className="p-2 border text-center">{ contribution.isApproved ? "Not Approved" : "Approved" }</td>
+                                            <td className="p-2 border text-center">{ contribution.isApproved ? "Approved" : "Not Approved" }</td>
                                         </tr>
                                     ))
                                 }
