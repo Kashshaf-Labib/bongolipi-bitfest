@@ -172,9 +172,12 @@ function Contents() {
                 >
                   <Download size={20} />
                 </button>
-                <button className="text-orange-600 hover:text-orange-800">
+                <Link
+                  href={`/mycontents/edit/${content._id}`}
+                  className="text-orange-600 hover:text-orange-800"
+                >
                   <Edit size={20} />
-                </button>
+                </Link>
                 <button
                   className="text-red-600 hover:text-red-800"
                   onClick={() => {

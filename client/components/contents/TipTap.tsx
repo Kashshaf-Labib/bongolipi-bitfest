@@ -8,13 +8,15 @@ import Spinner from "@/components/common/Spinner";
 
 const Tiptap = ({
   onContentChange,
+  initialContent = "",
 }: {
   onContentChange: (data: string) => void;
+  initialContent?: string;
 }) => {
   const [translationLoading, setTranslationLoading] = useState(false);
   const editor = useEditor({
     extensions: [StarterKit, Markdown],
-    content: "",
+    content: initialContent,
     onUpdate: ({ editor }) => {
       const htmlContent = editor?.storage?.markdown?.getMarkdown();
       onContentChange(htmlContent);
