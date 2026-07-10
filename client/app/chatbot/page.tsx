@@ -1,38 +1,55 @@
 "use client";
 
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import {
+  ChangeEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { motion } from "framer-motion";
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Upload } from "lucide-react";
 import { PDF_QUERY_URL } from "@/lib/const";
 import toast from "react-hot-toast";
 
-export default function ChatbotPage() {
-  const [chats, setChats] = useState<any[]>([]);
+type ChatMessage = {
+  _id?: string;
+  role: string;
+  content: string;
+};
+
+function ChatbotContent() {
+  const [chats, setChats] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [loadingResponse, setLoadingResponse] = useState<boolean>(false);
   const [sessionId, setSessionId] = useState<string>("");
-  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [chatHistory, setChatHistory] = useState<string[]>([]);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  useEffect(() => {
-    setSessionId(searchParams.get("sessionId") || "");
-
+  const refreshHistory = useCallback(() => {
     fetch("/api/chat")
-      .then(async (res) => {
-        const data = await res.json();
-        console.log(data);
-        setChatHistory(data.sessions);
-      })
+      .then((res) => res.json())
+      .then((data) => setChatHistory(data.sessions || []))
       .catch(console.error);
   }, []);
 
+  // Keep the active session in sync with the URL so history clicks work.
+  useEffect(() => {
+    setSessionId(searchParams.get("sessionId") || "");
+  }, [searchParams]);
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
+
+  // Load the messages for the active session.
   useEffect(() => {
     if (!sessionId) {
       setChats([]);
@@ -40,73 +57,99 @@ export default function ChatbotPage() {
     }
 
     (async () => {
-      const res = await fetch(`/api/chat/${sessionId}`);
-      const data = await res.json();
-      console.log(data);
-      setChats(data);
+      try {
+        const res = await fetch(`/api/chat/${sessionId}`);
+        const data = await res.json();
+        setChats(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error(error);
+      }
     })();
   }, [sessionId]);
 
+  const persistMessage = async (
+    session: string,
+    role: string,
+    content: string,
+  ) => {
+    await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: session, role, content }),
+    });
+  };
+
   const handleSendMessage = async () => {
-    if (!currentMessage.trim()) return;
+    const question = currentMessage.trim();
+    if (!question) {
+      toast.error(
+        file ? "Please type a question about the PDF." : "Please type a message.",
+      );
+      return;
+    }
+
     setLoadingResponse(true);
     try {
-      if (!currentMessage) {
-        toast.error("Please select a file or a question to upload");
-        return;
-      }
-
       if (file) {
+        // Retrieval-augmented answer over the uploaded PDF.
         const formData = new FormData();
         formData.append("pdf_file", file);
-        formData.append("question", currentMessage);
-        setLoadingResponse(true);
-        try {
-          const res = await fetch(`${PDF_QUERY_URL}/rag-multi-query`, {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
-          console.log(data);
-          setChats((prev) => [...prev, { role: "user", content: file.name }]);
-          if (data.answer)
-            setChats((prev) => [
-              ...prev,
-              { role: "assistant", content: data.answer },
-            ]);
-            setFile(null);
-          setSessionId(data.sessionId);
-          router.push(`/chatbot?sessionId=${data.sessionId}`);
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setLoadingResponse(false);
+        formData.append("question", question);
+
+        const res = await fetch(`${PDF_QUERY_URL}/rag-multi-query`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (!data.answer) {
+          toast.error("Could not get an answer from the document.");
+          return;
+        }
+
+        // The RAG service is stateless, so persist the exchange ourselves.
+        const activeSession = sessionId || crypto.randomUUID();
+        setChats((prev) => [
+          ...prev,
+          { role: "user", content: question },
+          { role: "assistant", content: data.answer },
+        ]);
+        await persistMessage(activeSession, "user", question);
+        await persistMessage(activeSession, "assistant", data.answer);
+
+        setFile(null);
+        setCurrentMessage("");
+        if (!sessionId) {
+          setSessionId(activeSession);
+          router.push(`/chatbot?sessionId=${activeSession}`);
         }
       } else {
+        // Plain chat; /api/chat/generate persists both sides itself.
         const res = await fetch(`/api/chat/generate?sessionId=${sessionId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: searchParams.get("sessionId"),
-            content: currentMessage,
-          }),
+          body: JSON.stringify({ content: question }),
         });
-
         const data = await res.json();
-        console.log(data);
 
+        const newSessionId = data.sessionId || sessionId;
         setChats((prev) => [
           ...prev,
-          { role: "user", content: currentMessage },
+          { role: "user", content: question },
+          ...(data.response ? [data.response as ChatMessage] : []),
         ]);
-        if (data.response) setChats((prev) => [...prev, { ...data.response }]);
+        setCurrentMessage("");
 
-        setSessionId(data.sessionId);
-        router.push(`/chatbot?sessionId=${Date.now()}`);
+        if (newSessionId && newSessionId !== sessionId) {
+          setSessionId(newSessionId);
+          router.push(`/chatbot?sessionId=${newSessionId}`);
+        }
       }
-      setCurrentMessage("");
+
+      refreshHistory();
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast.error("Something went wrong. Please try again later.");
     } finally {
       setLoadingResponse(false);
     }
@@ -119,9 +162,9 @@ export default function ChatbotPage() {
     router.push("/chatbot");
   };
 
-  const handleFileChange = async (e: ChangeEvent) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    setFile(file || null);
+  const handleFileChange = (e: ChangeEvent) => {
+    const selected = (e.target as HTMLInputElement).files?.[0];
+    setFile(selected || null);
   };
 
   return (
@@ -143,9 +186,9 @@ export default function ChatbotPage() {
           Chat History
         </motion.h2>
         <ul className="space-y-2 overflow-y-auto max-h-[calc(100vh-8rem)]">
-          {chatHistory.map((sessionId, index) => (
-            <li key={"s" + index} className="p-2 rounded-md bg-white shadow">
-              <Link href={`/chatbot?sessionId=${sessionId}`}>{sessionId}</Link>
+          {chatHistory.map((session, index) => (
+            <li key={"s" + index} className="p-2 rounded-md bg-white shadow truncate">
+              <Link href={`/chatbot?sessionId=${session}`}>{session}</Link>
             </li>
           ))}
         </ul>
@@ -195,31 +238,41 @@ export default function ChatbotPage() {
           <button
             onClick={() => pdfInputRef.current?.click()}
             className="px-4 py-2 bg-gray-200 rounded text-gray-800 font-semibold shadow"
-          ><Upload /></button>
+          >
+            <Upload />
+          </button>
           <div className="flex-grow">
-            {
-              file && (
-                <p className="text-sm text-gray-500">{file.name}</p>
-              )
-            }
-          <input
-            type="text"
-            placeholder="Type your message..."
-            value={currentMessage}
-            onChange={(e) => setCurrentMessage(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-200 rounded text-gray-800 outline-none placeholder-gray-500 shadow"
-          />
+            {file && <p className="text-sm text-gray-500">{file.name}</p>}
+            <input
+              type="text"
+              placeholder="Type your message..."
+              value={currentMessage}
+              onChange={(e) => setCurrentMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !loadingResponse) handleSendMessage();
+              }}
+              className="w-full px-4 py-2 bg-gray-200 rounded text-gray-800 outline-none placeholder-gray-500 shadow"
+            />
           </div>
           <motion.button
             onClick={handleSendMessage}
+            disabled={loadingResponse}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 bg-primary hover:bg-primary rounded text-white font-semibold shadow"
+            className="px-4 py-2 bg-primary hover:bg-primary rounded text-white font-semibold shadow disabled:opacity-60"
           >
-            Send
+            {loadingResponse ? "Sending..." : "Send"}
           </motion.button>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ChatbotPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <ChatbotContent />
+    </Suspense>
   );
 }
