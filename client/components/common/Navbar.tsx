@@ -8,9 +8,19 @@ import { useAuth, useUser, UserButton } from "@clerk/nextjs";
 import Button from "./Button";
 import { useRouter } from "next/navigation";
 
+type SearchResult = {
+  _id?: string;
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  title?: string;
+  caption?: string;
+};
+
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { isSignedIn } = useAuth();
   const { user } = useUser(); // Correct way to access user metadata on the client-side
@@ -87,7 +97,7 @@ export default function Navbar() {
               ref={dropdownRef}
               className="absolute mt-2 w-full bg-white text-gray-800 shadow-lg rounded-md max-h-60 overflow-auto z-50"
             >
-              {searchResults.map((result: any, index) => (
+              {searchResults.map((result: SearchResult, index) => (
                 <Link
                   href={
                     result.userId
