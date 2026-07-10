@@ -13,22 +13,25 @@ export async function GET(req: Request) {
     return NextResponse.json({ users: [], contents: [] });
   }
 
+  // Escape regex metacharacters so user input can't inject a pattern.
+  const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
   try {
     // Search in Users
     const users = await User.find({
       $or: [
-        { firstName: { $regex: query, $options: "i" } },
-        { lastName: { $regex: query, $options: "i" } },
-        { email: { $regex: query, $options: "i" } },
+        { firstName: { $regex: safeQuery, $options: "i" } },
+        { lastName: { $regex: safeQuery, $options: "i" } },
+        { email: { $regex: safeQuery, $options: "i" } },
       ],
     }).select("firstName lastName email userId");
 
     // Search in Contents
     const contents = await Content.find({
       $or: [
-        { title: { $regex: query, $options: "i" } },
-        { caption: { $regex: query, $options: "i" } },
-        { content: { $regex: query, $options: "i" } },
+        { title: { $regex: safeQuery, $options: "i" } },
+        { caption: { $regex: safeQuery, $options: "i" } },
+        { content: { $regex: safeQuery, $options: "i" } },
       ],
     }).select("title caption userId");
 
