@@ -3,9 +3,9 @@ import { dbConnect } from '@/db/mongod';
 import { getAuth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = async (req: NextRequest, {params}: {params: {sessionId:string}}) => {
+export const GET = async (req: NextRequest, {params}: {params: Promise<{sessionId:string}>}) => {
   try {
-    const { sessionId } = params;
+    const { sessionId } = await params;
 
     const { userId } = await getAuth(req);
     if (!sessionId) {

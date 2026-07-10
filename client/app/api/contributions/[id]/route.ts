@@ -5,12 +5,12 @@ import Contribution from "@/db/models/Contribution";
 // DELETE Contribution
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const contribution = await Contribution.findByIdAndDelete(id);
 
