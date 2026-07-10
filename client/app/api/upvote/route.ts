@@ -19,7 +19,7 @@ export async function PATCH(req: Request) {
   const hasUpvoted = content.upvotes.includes(userId);
 
   if (hasUpvoted) {
-    content.upvotes = content.upvotes.filter((id) => id !== userId);
+    content.upvotes = content.upvotes.filter((id: string) => id !== userId);
   } else {
     content.upvotes.push(userId);
   }
