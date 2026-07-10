@@ -4,7 +4,6 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "tiptap-markdown";
 import { useEffect, useState } from "react";
-import { BANGLISH_API } from "@/lib/const";
 import Spinner from "@/components/common/Spinner";
 
 const Tiptap = ({

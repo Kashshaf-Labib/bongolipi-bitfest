@@ -1,5 +1,3 @@
-import { div } from "framer-motion/client";
-
 interface SwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
