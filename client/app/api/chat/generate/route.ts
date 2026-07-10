@@ -20,18 +20,30 @@ export const POST = async (req: NextRequest) => {
             );
         }
 
+        const { userId } = getAuth(req);
+        await dbConnect();
+
+        // Replay recent history so the assistant has conversational memory.
+        const history = sessionId
+            ? await Chat.find({ sessionId, userId }).sort({ createdAt: 1 }).limit(20)
+            : [];
+
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
                     role: 'system',
                     content:
-                        `You are a highly accurate Banglish to Bangla translator AI. 
+                        `You are a highly accurate Banglish to Bangla translator AI.
 Your goal is to read the provided text and produce a correct reply, clear, and natural-sounding Bangla.
 For example:
 "user": "Kemon acho?"
 "assistant": "ভালো আছি, ধন্যবাদ।"
 `,
                 },
+                ...history.map((m) => ({
+                    role: m.role as 'user' | 'assistant',
+                    content: m.content,
+                })),
                 {
                     role: 'user',
                     content: `${content}`,
@@ -45,20 +57,17 @@ For example:
             stop: null,
         });
 
-        const { userId } = await getAuth(req);
-
         const assistantResponse =
-            chatCompletion.choices[0]?.message?.content || 'No title or caption was generated';
-    
+            chatCompletion.choices[0]?.message?.content || 'No response was generated';
+
         const newSessionId = sessionId || randomUUID();
-        await dbConnect();
         const chat = new Chat({ userId, sessionId: newSessionId, content, role: "user" });
         await chat.save();
-        
+
         const assistantChat = new Chat({ userId, sessionId: newSessionId, content: assistantResponse, role: "assistant" });
         await assistantChat.save();
         return NextResponse.json({response: assistantChat, sessionId: newSessionId});
-        
+
     } catch (error) {
         console.log(error);
         return NextResponse.json(
