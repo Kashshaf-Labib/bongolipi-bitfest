@@ -72,7 +72,7 @@ export default function MobileSidebar() {
                   className="hover:bg-gray-800 px-4 py-2 rounded-md transition-colors duration-300"
                 >
                   <Link
-                    href={`/${item.toLowerCase()}`}
+                    href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
                     className="block"
                     onClick={() => setShow(false)}
                   >

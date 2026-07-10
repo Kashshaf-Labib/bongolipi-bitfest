@@ -137,7 +137,9 @@ export default function Navbar() {
                   key={index}
                   className="font-semibold hover:text-blue-400 transition-colors duration-300"
                 >
-                  <Link href={`/${item.toLowerCase()}`}>{item}</Link>
+                  <Link href={item === "Home" ? "/" : `/${item.toLowerCase()}`}>
+                    {item}
+                  </Link>
                 </li>
               )
             )}
