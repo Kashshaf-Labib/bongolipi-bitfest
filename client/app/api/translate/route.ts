@@ -24,7 +24,7 @@ Your goal is to read the provided text in Banglish and produce a correct, clear,
 For example:
 \`\`\`json
 {
-  "bangla_text": "আমার নাম রাহিম।"
+  "banglaText": "আমার নাম রাহিম।"
 }
 \`\`\`
           `,
@@ -58,28 +58,25 @@ ${inputText}
     const jsonBlockRegex = /```json([\s\S]*?)```/;
     const match = translationText.match(jsonBlockRegex);
 
-    let parsedResult = {};
+    let parsed: Record<string, string> = {};
 
     // 4. Parse the extracted JSON if it exists
     if (match && match[1]) {
       try {
-        parsedResult = JSON.parse(match[1].trim());
+        parsed = JSON.parse(match[1].trim());
       } catch (error) {
         console.error('Error parsing JSON:', error);
-        // If parsing fails, return the raw text
-        parsedResult = {
-          bangla_text: translationText,
-        };
       }
-    } else {
-      // If no JSON block is found, return the entire text as fallback
-      parsedResult = {
-        bangla_text: translationText,
-      };
     }
 
-    // 5. Send the parsed JSON (or fallback) to the client
-    return NextResponse.json(parsedResult);
+    // 5. Normalize to a single key regardless of what the model emitted
+    const banglaText =
+      parsed.banglaText ||
+      parsed.bangla_text ||
+      parsed.bangla ||
+      translationText;
+
+    return NextResponse.json({ banglaText });
   } catch (error) {
     console.error(error);
     return NextResponse.json({
