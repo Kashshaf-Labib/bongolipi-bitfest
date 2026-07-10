@@ -126,6 +126,7 @@ async def rag_query(
     print("[/rag-query] Loading PDF with PyPDFLoader...")
     loader = PyPDFLoader(tmp_path)
     docs = loader.load()
+    os.unlink(tmp_path)  # PDF is loaded into memory; drop the temp file
 
     if not docs:
         print("[/rag-query] No documents found in PDF.")
@@ -141,7 +142,9 @@ async def rag_query(
 
     # 4. Create vector store and retriever
     print("[/rag-query] Creating vector store (Chroma) and retriever...")
-    embedding_model = HuggingFaceEmbeddings()
+    embedding_model = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
     vectorstore = Chroma.from_documents(splits, embedding_model)
     retriever = vectorstore.as_retriever()
 
@@ -192,6 +195,7 @@ async def rag_multi_query(
     print("[/rag-multi-query] Loading PDF with PyPDFLoader...")
     loader = PyPDFLoader(tmp_path)
     docs = loader.load()
+    os.unlink(tmp_path)  # PDF is loaded into memory; drop the temp file
 
     if not docs:
         print("[/rag-multi-query] No documents found in PDF.")
@@ -207,7 +211,9 @@ async def rag_multi_query(
 
     # 4. Create vector store
     print("[/rag-multi-query] Creating vector store (Chroma) and retriever...")
-    embedding_model = HuggingFaceEmbeddings()
+    embedding_model = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
     vectorstore = Chroma.from_documents(splits, embedding_model)
     retriever = vectorstore.as_retriever()
 
