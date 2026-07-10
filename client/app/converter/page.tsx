@@ -12,16 +12,29 @@ export default function Converter() {
     try {
       if (!banglish) return;
       setBangla("");
-      const url = `${BANGLISH_API}/banglish`;
-      const options = {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: banglish }),
-      };
       setLoading(true);
-      const response = await fetch(url, options);
-      const data = await response.json();
-      setBangla(data.generated_text);
+
+      let translated = "";
+      if (BANGLISH_API) {
+        // Custom fine-tuned model service.
+        const response = await fetch(`${BANGLISH_API}/banglish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: banglish }),
+        });
+        const data = await response.json();
+        translated = data.generated_text;
+      } else {
+        // Fallback to the Groq-backed translator when no model is configured.
+        const response = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inputText: banglish }),
+        });
+        const data = await response.json();
+        translated = data.banglaText;
+      }
+      setBangla(translated || "");
     } catch (err) {
       alert("Something went wrong. Please try again later.");
       console.error(err);
