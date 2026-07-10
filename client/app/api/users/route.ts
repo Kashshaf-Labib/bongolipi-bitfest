@@ -12,15 +12,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const existingUser = await User.findOne({ userId });
-    if (existingUser) {
-      return NextResponse.json({ error: "User already exists" }, { status: 409 });
-    }
+    // Idempotent sync: create on first sign-up, keep in sync afterwards.
+    const user = await User.findOneAndUpdate(
+      { userId },
+      { $set: { firstName, lastName, email } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    const newUser = new User({ userId, firstName, lastName, email });
-    await newUser.save();
-
-    return NextResponse.json({ message: "User created successfully" });
+    return NextResponse.json({ message: "User synced successfully", user });
   } catch (error) {
     console.error("Error saving user:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
