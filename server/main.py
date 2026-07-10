@@ -24,9 +24,12 @@ import uvicorn
 
 app = FastAPI()
 
+# Comma-separated list of allowed origins; defaults to "*" for local dev.
+allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware, # https://fastapi.tiangolo.com/tutorial/cors/
-    allow_origins=['*'], # wildcard to allow all, more here - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
+    allow_origins=allowed_origins, # restrict to the deployed client in production
     allow_credentials=True, # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
     allow_methods=['*'], # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
     allow_headers=['*'], # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
@@ -36,13 +39,14 @@ app.add_middleware(
 ###############################################################################
 
 # 1) LLM (Groq)
-groq_api_key = os.environ.get("GROQ_API_KEY", "<YOUR_GROQ_API_KEY>")
-print("[INIT] Using Groq API Key:", groq_api_key)
+groq_api_key = os.environ.get("GROQ_API_KEY")
+if not groq_api_key:
+    raise RuntimeError("GROQ_API_KEY environment variable is not set")
 
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0,
-    groq_api_key="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",
+    groq_api_key=groq_api_key,
     max_tokens=None,
     timeout=None,
     max_retries=2,
