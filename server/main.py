@@ -21,10 +21,14 @@ from langchain_core.load import dumps, loads
 from typing import Optional
 import tempfile
 import uvicorn
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from a local .env file (if present).
-load_dotenv()
+# Load environment variables from a local .env (or .env.local) file next to
+# this module, regardless of the current working directory.
+_env_dir = Path(__file__).resolve().parent
+load_dotenv(_env_dir / ".env")
+load_dotenv(_env_dir / ".env.local", override=True)
 
 app = FastAPI()
 
@@ -43,7 +47,7 @@ app.add_middleware(
 ###############################################################################
 
 # 1) LLM (Groq)
-groq_api_key = os.environ.get("GROQ_API_KEY")
+groq_api_key = (os.environ.get("GROQ_API_KEY") or "").strip()
 if not groq_api_key:
     raise RuntimeError("GROQ_API_KEY environment variable is not set")
 
