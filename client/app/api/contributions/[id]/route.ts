@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/db/mongod";
 import Contribution from "@/db/models/Contribution";
+import { isAdminRequest } from "@/lib/auth";
 
 // DELETE Contribution
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await isAdminRequest(req))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   await dbConnect();
 
   try {

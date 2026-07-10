@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { motion } from "framer-motion";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -23,6 +25,10 @@ type Analytics = {
 };
 
 export default function AdminDashboard() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+  const isAdmin = user?.publicMetadata?.role === "admin";
+
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [error, setError] = useState("");
@@ -118,9 +124,16 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchAnalytics();
-    fetchContributions();
-  }, []);
+    if (isLoaded && !isAdmin) {
+      router.replace("/");
+      return;
+    }
+    if (isAdmin) {
+      fetchAnalytics();
+      fetchContributions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, isAdmin, router]);
 
   const chartData = {
     labels: ["Pending Contributions", "Approved Contributions"],
@@ -135,6 +148,22 @@ export default function AdminDashboard() {
       },
     ],
   };
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Access denied.
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-6 md:px-12">

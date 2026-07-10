@@ -1,9 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {dbConnect} from "../../../db/mongod";
 import Contribution from "@/db/models/Contribution";
+import { isAdminRequest } from "@/lib/auth";
 
 // Fetch contributions (pending or all)
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  if (!(await isAdminRequest(req))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   await dbConnect();
 
   const url = new URL(req.url);
@@ -16,7 +21,11 @@ export async function GET(req: Request) {
 }
 
 // Approve a contribution
-export async function PATCH(req: Request) {
+export async function PATCH(req: NextRequest) {
+  if (!(await isAdminRequest(req))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   await dbConnect();
 
   const { id } = await req.json();

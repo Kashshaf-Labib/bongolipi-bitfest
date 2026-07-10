@@ -27,13 +27,18 @@
 // }
 
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/db/mongod";
 import Contribution from "@/db/models/Contribution";
 import { Content } from "@/db/models/Content";
 import { clerkClient } from "@clerk/clerk-sdk-node"; // Clerk API for user count
+import { isAdminRequest } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!(await isAdminRequest(req))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   await dbConnect();
 
   try {
