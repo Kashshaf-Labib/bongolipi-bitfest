@@ -7,9 +7,20 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://server:8000
+      - MONGODB_URI=mongodb://mongo:27017
+      - DBNAME=bongolipi
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      # Browser talks to the RAG service directly, so use the host-mapped port.
+      - NEXT_PUBLIC_PDF_QUERY_URL=http://localhost:8000
+    depends_on:
+      - mongo
+      - server
     volumes:
       - ./client:/app
+      - /app/node_modules
     command: ["npm", "run", "dev"]
 
   server:
@@ -18,12 +29,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MONGO_URI=mongodb://mongo:27017/mydatabase
-    depends_on:
-      - mongo
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ALLOWED_ORIGINS=http://localhost:3000
     volumes:
       - ./server:/app
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   mongo:
     image: mongo:6.0
