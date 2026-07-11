@@ -5,9 +5,7 @@ import Spinner from "@/components/common/Spinner";
 import { Download, Edit, Plus, Trash2,ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { jsPDF } from "jspdf";
-import MarkdownPreview from "@uiw/react-markdown-preview";
-import html2canvas from "html2canvas";
+import DOMPurify from "isomorphic-dompurify";
 
 
 type Content = {
@@ -78,24 +76,55 @@ function Contents() {
     }
   };
 
-  const downloadPdf = async (doc_id: string) => {
-    const content = document.getElementById(doc_id) as HTMLElement;
-    content.style.display = "block";
+  const downloadPdf = (content: Content) => {
+    // Print the content in a clean window: the browser shapes Bangla correctly
+    // and the resulting PDF has real, selectable text (not an image).
+    const printWindow = window.open("", "_blank", "width=820,height=920");
+    if (!printWindow) {
+      alert("Please allow pop-ups to download the PDF.");
+      return;
+    }
 
-    const canvas = await html2canvas(content, {
-      useCORS: true,
-    });
-    const imgData = canvas.toDataURL("image/png");
+    const title = DOMPurify.sanitize(content.title, { ALLOWED_TAGS: [] });
+    const caption = DOMPurify.sanitize(content.caption, { ALLOWED_TAGS: [] });
+    const body = DOMPurify.sanitize(content.content || "");
 
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "pt",
-      format: [canvas.width, canvas.height],
-    });
-
-    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-    pdf.save("document.pdf");
-    content.style.display = "none";
+    printWindow.document.write(`<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="utf-8" />
+    <title>${title || "document"}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: 'Nirmala UI', 'Noto Sans Bengali', 'Baloo Da 2', system-ui, Arial, sans-serif;
+        color: #111827;
+        line-height: 1.7;
+        padding: 48px;
+      }
+      h1.doc-title { font-size: 28px; margin: 0 0 8px; }
+      p.doc-caption { color: #4b5563; font-size: 16px; margin: 0 0 24px; }
+      .doc-body h1 { font-size: 24px; font-weight: 700; margin: 0.67em 0; }
+      .doc-body h2 { font-size: 20px; font-weight: 700; margin: 0.75em 0; }
+      .doc-body h3 { font-size: 17px; font-weight: 700; margin: 0.83em 0; }
+      .doc-body p { margin: 0.6em 0; }
+      .doc-body ul { list-style: disc; padding-left: 1.5rem; }
+      .doc-body ol { list-style: decimal; padding-left: 1.5rem; }
+      .doc-body strong { font-weight: 700; }
+      .doc-body em { font-style: italic; }
+    </style>
+  </head>
+  <body>
+    <h1 class="doc-title">${title}</h1>
+    <p class="doc-caption">${caption}</p>
+    <div class="doc-body">${body}</div>
+  </body>
+</html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.onafterprint = () => printWindow.close();
+    // Give the new document a tick to render (fonts) before printing.
+    setTimeout(() => printWindow.print(), 400);
   };
 
   useEffect(() => {
@@ -165,10 +194,9 @@ function Contents() {
                   <span>{content.upvotes?.length || 0}</span>
                 </div>
               <div className="flex justify-end items-center gap-4">
-                <ContentTemplate {...content} />
                 <button
                   className="text-blue-600 hover:text-primary"
-                  onClick={() => downloadPdf(`doc_${content._id}`)}
+                  onClick={() => downloadPdf(content)}
                 >
                   <Download size={20} />
                 </button>
@@ -228,23 +256,6 @@ function Contents() {
     </div>
   );
 }
-
-const ContentTemplate = (content: Content) => {
-  return (
-    <div
-      id={`doc_` + content._id}
-      style={{ display: "none" }}
-      className="p-6 bg-white rounded-lg border shadow fixed"
-    >
-      <h2 className="text-2xl font-bold mb-4">{content.title}</h2>
-      <p className="text-base text-gray-600 mb-6">{content.caption}</p>
-      <MarkdownPreview
-        style={{ backgroundColor: "transparent" }}
-        source={content.content}
-      />
-    </div>
-  );
-};
 
 export default Contents;
 
