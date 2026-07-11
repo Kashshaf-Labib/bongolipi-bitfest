@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleX, Menu, Search, User, FileText } from "lucide-react";
+import { CircleX, Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,15 +8,8 @@ import { useAuth, UserButton } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "./ThemeToggle";
+import SearchBox from "./SearchBox";
 import { cn } from "@/lib/utils";
-
-type SearchResult = {
-  _id?: string;
-  userId?: string;
-  firstName?: string;
-  lastName?: string;
-  title?: string;
-};
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -28,32 +21,11 @@ const navLinks = [
 
 export default function MobileSidebar() {
   const [show, setShow] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
   const { isSignedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleSearch = async (q: string) => {
-    setSearchQuery(q);
-    if (q.length < 2) {
-      setResults([]);
-      return;
-    }
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      setResults([...(data.users || []), ...(data.contents || [])]);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const close = () => {
-    setShow(false);
-    setResults([]);
-    setSearchQuery("");
-  };
+  const close = () => setShow(false);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -95,42 +67,7 @@ export default function MobileSidebar() {
               </div>
 
               <div className="mt-5">
-                <div className="flex items-center rounded-full border border-border bg-card px-3 focus-within:border-ring">
-                  <Search size={18} className="text-muted-foreground" />
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    placeholder="Search…"
-                    className="w-full bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
-                  />
-                </div>
-                {results.length > 0 && (
-                  <div className="mt-2 max-h-48 overflow-auto rounded-xl border border-border bg-card">
-                    {results.map((r, i) => (
-                      <Link
-                        key={i}
-                        href={
-                          r.firstName
-                            ? `/profiles/${r.userId}`
-                            : `/contents/${r._id}`
-                        }
-                        onClick={close}
-                        className="flex items-center justify-between px-3 py-2 text-sm hover:bg-muted"
-                      >
-                        <span className="truncate text-foreground">
-                          {r.firstName
-                            ? `${r.firstName} ${r.lastName}`
-                            : r.title}
-                        </span>
-                        {r.firstName ? (
-                          <User size={14} className="text-muted-foreground" />
-                        ) : (
-                          <FileText size={14} className="text-primary" />
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                <SearchBox onNavigate={close} />
               </div>
 
               <nav className="mt-6 flex flex-col gap-1">
@@ -149,6 +86,20 @@ export default function MobileSidebar() {
                     {link.label}
                   </Link>
                 ))}
+                {isSignedIn && (
+                  <Link
+                    href="/dashboard"
+                    onClick={close}
+                    className={cn(
+                      "rounded-xl px-4 py-2.5 text-sm font-medium transition-colors",
+                      isActive("/dashboard")
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-muted",
+                    )}
+                  >
+                    Dashboard
+                  </Link>
+                )}
               </nav>
 
               <div className="mt-auto flex items-center justify-between pt-6">

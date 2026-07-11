@@ -4,40 +4,41 @@ import { User } from "@/db/models/User";
 import { Content } from "@/db/models/Content";
 
 export async function GET(req: Request) {
-  await dbConnect();
-
   const url = new URL(req.url);
-  const query = url.searchParams.get("q");
+  const query = (url.searchParams.get("q") || "").trim();
+  const limit = Math.min(Number(url.searchParams.get("limit")) || 6, 20);
 
-  if (!query) {
+  if (query.length < 1) {
     return NextResponse.json({ users: [], contents: [] });
   }
 
+  await dbConnect();
+
   // Escape regex metacharacters so user input can't inject a pattern.
-  const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const safe = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rx = { $regex: safe, $options: "i" };
 
   try {
-    // Search in Users
-    const users = await User.find({
-      $or: [
-        { firstName: { $regex: safeQuery, $options: "i" } },
-        { lastName: { $regex: safeQuery, $options: "i" } },
-        { email: { $regex: safeQuery, $options: "i" } },
-      ],
-    }).select("firstName lastName email userId");
-
-    // Search in Contents
-    const contents = await Content.find({
-      $or: [
-        { title: { $regex: safeQuery, $options: "i" } },
-        { caption: { $regex: safeQuery, $options: "i" } },
-        { content: { $regex: safeQuery, $options: "i" } },
-      ],
-    }).select("title caption userId");
+    const [users, contents] = await Promise.all([
+      // Never expose email in results, but still allow matching by it.
+      User.find({ $or: [{ firstName: rx }, { lastName: rx }, { email: rx }] })
+        .select("firstName lastName userId")
+        .limit(limit)
+        .lean(),
+      // Only published content is searchable.
+      Content.find({ isPublished: true, $or: [{ title: rx }, { caption: rx }] })
+        .select("title caption userId created_at")
+        .sort({ created_at: -1 })
+        .limit(limit)
+        .lean(),
+    ]);
 
     return NextResponse.json({ users, contents });
   } catch (error) {
     console.error("Error searching:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
