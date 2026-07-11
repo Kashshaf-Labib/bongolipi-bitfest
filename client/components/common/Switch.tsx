@@ -1,29 +1,33 @@
+import { cn } from "@/lib/utils";
+
 interface SwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
+  label?: string;
 }
 
-const Switch = ({ checked, onChange }:SwitchProps) => {
-  const handleToggle = () => {
-    onChange(!checked);
-  };
-
+const Switch = ({ checked, onChange, label = "Publish" }: SwitchProps) => {
   return (
-    <div className="flex items-center gap-2">
-      <span>Publish</span>
-      <div
-        onClick={handleToggle}
-        className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer ${
-          checked ? "bg-primary" : "bg-gray-300"
-        }`}
+    <label className="inline-flex cursor-pointer items-center gap-3">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={cn(
+          "relative h-6 w-11 rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-muted",
+        )}
       >
-        <div
-          className={`bg-white w-5 h-5 rounded-full shadow-md transform ${
-            checked ? "translate-x-6" : "translate-x-0"
-          } transition`}
-        ></div>
-      </div>
-    </div>
+        <span
+          className={cn(
+            "absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform",
+            checked && "translate-x-5",
+          )}
+        />
+      </button>
+      <span className="text-sm font-medium text-foreground">{label}</span>
+    </label>
   );
 };
 

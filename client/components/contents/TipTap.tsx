@@ -63,7 +63,7 @@ const Tiptap = ({
     <div className="w-full">
       {/* Toolbar */}
       {editor && (
-        <div className="flex flex-wrap justify-start items-center gap-2 toolbar bg-white bg-opacity-15 rounded-t-md py-1">
+        <div className="toolbar flex flex-wrap items-center justify-start gap-2 rounded-t-xl border border-b-0 border-border bg-muted px-2 py-1.5">
           <button
             className="font-bold"
             onMouseDown={keepSelection}
@@ -124,7 +124,7 @@ const Tiptap = ({
           <div className="px-4">
             <button
               disabled={translationLoading}
-              className="bg-primary text-white"
+              className="bg-primary text-primary-foreground hover:!bg-primary/90"
               onMouseDown={keepSelection}
               onClick={translate}
             >
@@ -134,7 +134,10 @@ const Tiptap = ({
         </div>
       )}
       <div className="w-full">
-        <EditorContent className="border p-2 rounded-sm" editor={editor} />
+        <EditorContent
+          className="rounded-b-xl border border-border bg-card p-3"
+          editor={editor}
+        />
       </div>
     </div>
   );

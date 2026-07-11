@@ -2,10 +2,15 @@
 
 import Switch from "@/components/common/Switch";
 import Tiptap from "@/components/contents/TipTap";
-import Spinner from "@/components/common/Spinner";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { Container } from "@/components/ui/Container";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Input, Label } from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import { Loader } from "@/components/ui/Loader";
 
 export default function EditContent() {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +51,7 @@ export default function EditContent() {
 
   const saveContent = async () => {
     if (!title || !caption || !content) {
-      toast.error("Title, Caption and Content are required.");
+      toast.error("Title, caption and content are required.");
       return;
     }
     setSaving(true);
@@ -73,59 +78,70 @@ export default function EditContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner />
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+        <Loader size={32} />
       </div>
     );
   }
 
   if (notFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center text-muted-foreground">
         Content not found.
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-12 max-w-7xl mx-auto px-4">
-      <h1 className="text-4xl font-bold">Edit Content</h1>
-      <div className="my-6 p-4 shadow bg-white rounded border">
-        <input
-          type="text"
-          name="title"
-          placeholder="Title"
-          className="w-full border rounded-md p-2 outline-none my-4"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+    <div className="min-h-[calc(100vh-64px)] py-12">
+      <Container>
+        <PageHeader
+          title="Edit content"
+          description="Update your story and save the changes."
         />
-        <input
-          type="text"
-          name="caption"
-          placeholder="Caption"
-          className="w-full border rounded-md p-2 outline-none my-4"
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-        />
-        <div className="p-4 shadow bg-white rounded border min-h-40">
-          <Tiptap onContentChange={setContent} initialContent={initialContent} />
-        </div>
-        <div className="pt-4">
-          <Switch
-            checked={isPublished}
-            onChange={() => setIsPublished(!isPublished)}
-          />
-        </div>
-        <div className="pt-8">
-          <button
-            disabled={saving}
-            onClick={saveContent}
-            className="bg-primary rounded text-white p-4"
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
-      </div>
+
+        <Card className="mt-8">
+          <CardBody className="space-y-5">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                placeholder="Give it a title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="caption">Caption</Label>
+              <Input
+                id="caption"
+                placeholder="A short caption"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label>Content</Label>
+              <Tiptap
+                onContentChange={setContent}
+                initialContent={initialContent}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5">
+              <Switch
+                checked={isPublished}
+                onChange={() => setIsPublished(!isPublished)}
+              />
+              <Button onClick={saveContent} loading={saving}>
+                {saving ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      </Container>
     </div>
   );
 }

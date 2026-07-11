@@ -1,12 +1,27 @@
 "use client";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog";
-import Spinner from "@/components/common/Spinner";
-import { Download, Edit, Plus, Trash2,ThumbsUp } from "lucide-react";
+import {
+  Download,
+  Edit,
+  Plus,
+  Trash2,
+  ThumbsUp,
+  FileText,
+  MessageCircle,
+  HandHeart,
+  Heart,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
-
+import { Container } from "@/components/ui/Container";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Loader";
 
 type Content = {
   _id: string;
@@ -17,15 +32,29 @@ type Content = {
   upvotes: string[];
 };
 
+type Analytics = {
+  totalContents: number;
+  totalUpvotes: number;
+  totalChatInteractions: number;
+  totalContributions: number;
+};
+
+const statMeta: { key: keyof Analytics; label: string; icon: typeof FileText }[] =
+  [
+    { key: "totalContents", label: "Contents", icon: FileText },
+    { key: "totalUpvotes", label: "Upvotes", icon: Heart },
+    { key: "totalChatInteractions", label: "Chat messages", icon: MessageCircle },
+    { key: "totalContributions", label: "Contributions", icon: HandHeart },
+  ];
 
 function Contents() {
   const [contents, setContents] = useState<Content[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(
-    null
+    null,
   );
-  const [analytics, setAnalytics] = useState({
+  const [analytics, setAnalytics] = useState<Analytics>({
     totalContents: 0,
     totalUpvotes: 0,
     totalChatInteractions: 0,
@@ -34,16 +63,14 @@ function Contents() {
 
   useEffect(() => {
     fetch("/api/analytics")
-    .then(res => res.json())
-    .then(data => {
-      setAnalytics(data);
-    }).catch(err=> console.log(err))
+      .then((res) => res.json())
+      .then((data) => setAnalytics(data))
+      .catch((err) => console.log(err));
   }, []);
 
   const handleDelete = async (id: string) => {
     try {
-      const url = `/api/contents`;
-      const response = await fetch(url, {
+      const response = await fetch("/api/contents", {
         method: "DELETE",
         body: JSON.stringify({ id }),
       });
@@ -52,7 +79,6 @@ function Contents() {
     } catch (error) {
       console.error(error);
     }
-
     setDialogOpen(false);
     setSelectedContentId(null);
   };
@@ -65,10 +91,9 @@ function Contents() {
   const fetchContents = async () => {
     try {
       setLoading(true);
-      const url = `/api/contents`;
-      const response = await fetch(url);
+      const response = await fetch("/api/contents");
       const data = await response.json();
-      setContents(data);
+      setContents(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -77,8 +102,6 @@ function Contents() {
   };
 
   const downloadPdf = (content: Content) => {
-    // Print the content in a clean window: the browser shapes Bangla correctly
-    // and the resulting PDF has real, selectable text (not an image).
     const printWindow = window.open("", "_blank", "width=820,height=920");
     if (!printWindow) {
       alert("Please allow pop-ups to download the PDF.");
@@ -123,7 +146,6 @@ function Contents() {
     printWindow.document.close();
     printWindow.focus();
     printWindow.onafterprint = () => printWindow.close();
-    // Give the new document a tick to render (fonts) before printing.
     setTimeout(() => printWindow.print(), 400);
   };
 
@@ -131,135 +153,127 @@ function Contents() {
     fetchContents();
   }, []);
 
-  // const pieData = {
-  //   labels: ["Contents", "Upvotes", "Chat Interactions", "Contributions"],
-  //   datasets: [
-  //     {
-  //       data: [
-  //         analytics?.totalContents || 0,
-  //         analytics?.totalUpvotes || 0,
-  //         analytics?.totalChatInteractions || 0,
-  //         analytics?.totalContributions || 0,
-  //       ],
-  //       backgroundColor: ["#4CAF50", "#2196F3", "#FF9800", "#F44336"],
-  //       hoverBackgroundColor: ["#45A049", "#1E88E5", "#FB8C00", "#E53935"],
-  //     },
-  //   ],
-  // };
-
   return (
-    <div className="min-h-screen py-12 max-w-7xl mx-auto px-4">
-      {/* Header Section */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold text-primary">Manage Contents</h1>
-        <Link
-          href="/mycontents/create"
-          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-500 hover:to-indigo-500 transition"
-        >
-          <Plus />
-          <span>Create</span>
-        </Link>
-      </div>
+    <div className="min-h-[calc(100vh-64px)] py-12">
+      <Container>
+        <PageHeader
+          title="My Contents"
+          description="Manage the stories you've written."
+          actions={
+            <Link href="/mycontents/create">
+              <Button>
+                <Plus size={18} /> Create
+              </Button>
+            </Link>
+          }
+        />
 
-      {/* Contents Section */}
-      <div className="p-6 shadow-md rounded-lg bg-gray-50 border">
-
-        {loading ? (
-          <Spinner />
-        ) : contents.length === 0 ? (
-          <p className="text-center text-gray-500">No contents found.</p>
-        ) : (
-          contents.map((content) => (
-            <div
-              key={content._id}
-              className="p-6 bg-white rounded-lg shadow-md border hover:shadow-lg transition mb-6"
-            >
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                {content.title}
-              </h2>
-              <p className="text-gray-600 text-base mb-4">{content.caption}</p>
-              <div className="text-sm text-gray-500 mb-4">
-                <span
-                  className={`px-3 py-1 rounded ${
-                    content.isPublished
-                      ? "bg-green-100 text-green-600"
-                      : "bg-yellow-100 text-yellow-600"
-                  }`}
-                >
-                  {content.isPublished ? "Published" : "Private"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-600">
-                  <ThumbsUp className="text-blue-600" size={20} />
-                  <span>{content.upvotes?.length || 0}</span>
+        {/* Stat tiles */}
+        <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {statMeta.map((s) => (
+            <Card key={s.key} className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <s.icon size={20} />
                 </div>
-              <div className="flex justify-end items-center gap-4">
-                <button
-                  className="text-blue-600 hover:text-primary"
-                  onClick={() => downloadPdf(content)}
-                >
-                  <Download size={20} />
-                </button>
-                <Link
-                  href={`/mycontents/edit/${content._id}`}
-                  className="text-orange-600 hover:text-orange-800"
-                >
-                  <Edit size={20} />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">
+                    {analytics[s.key] || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Content list */}
+        <div className="mt-10 space-y-4">
+          {loading ? (
+            [0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full" />)
+          ) : contents.length === 0 ? (
+            <EmptyState
+              icon={<FileText size={24} />}
+              title="No contents yet"
+              description="Create your first story and it will show up here."
+              action={
+                <Link href="/mycontents/create">
+                  <Button>
+                    <Plus size={18} /> Create content
+                  </Button>
                 </Link>
-                <button
-                  className="text-red-600 hover:text-red-800"
-                  onClick={() => {
-                    setDialogOpen(true);
-                    setSelectedContentId(content._id);
-                  }}
-                >
-                  <Trash2 size={20} />
-                </button>
+              }
+            />
+          ) : (
+            contents.map((content) => (
+              <Card
+                key={content._id}
+                className="p-6 transition-shadow hover:shadow-warm-lg"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="truncate text-xl font-bold text-foreground">
+                        {content.title}
+                      </h2>
+                      <Badge tone={content.isPublished ? "success" : "warning"}>
+                        {content.isPublished ? "Published" : "Private"}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-muted-foreground">
+                      {content.caption}
+                    </p>
+                    <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <ThumbsUp size={16} className="text-primary" />
+                      {content.upvotes?.length || 0}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => downloadPdf(content)}
+                      aria-label="Download PDF"
+                    >
+                      <Download size={18} />
+                    </Button>
+                    <Link href={`/mycontents/edit/${content._id}`}>
+                      <Button variant="ghost" size="icon" aria-label="Edit">
+                        <Edit size={18} />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:bg-destructive/10"
+                      onClick={() => {
+                        setDialogOpen(true);
+                        setSelectedContentId(content._id);
+                      }}
+                      aria-label="Delete"
+                    >
+                      <Trash2 size={18} />
+                    </Button>
+                  </div>
+                </div>
+
                 {selectedContentId === content._id && (
                   <ConfirmDialog
                     isOpen={isDialogOpen}
-                    title="Confirm Deletion"
-                    message="Are you sure you want to delete? This action cannot be undone."
+                    title="Delete this content?"
+                    message="This action cannot be undone."
                     onConfirm={() => handleDelete(content._id)}
                     onCancel={handleCancel}
                   />
                 )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      {/* Analytics Section */}
-      <h1 className="pt-12 pb-4 text-3xl text-primary font-bold">User Analytics</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div className="p-4 bg-green-100 rounded shadow text-center">
-          <h2 className="text-xl font-semibold text-green-700">Total Contents</h2>
-          <p className="text-3xl font-bold">{analytics?.totalContents || 0}</p>
+              </Card>
+            ))
+          )}
         </div>
-        <div className="p-4 bg-blue-100 rounded shadow text-center">
-          <h2 className="text-xl font-semibold text-blue-700">Total Upvotes</h2>
-          <p className="text-3xl font-bold">{analytics?.totalUpvotes || 0}</p>
-        </div>
-        <div className="p-4 bg-orange-100 rounded shadow text-center">
-          <h2 className="text-xl font-semibold text-orange-700">
-            Chat Interactions
-          </h2>
-          <p className="text-3xl font-bold">
-            {analytics?.totalChatInteractions || 0}
-          </p>
-        </div>
-        <div className="p-4 bg-red-100 rounded shadow text-center">
-          <h2 className="text-xl font-semibold text-red-700">Contributions</h2>
-          <p className="text-3xl font-bold">{analytics?.totalContributions || 0}</p>
-        </div>
-      </div>
+      </Container>
     </div>
   );
 }
 
 export default Contents;
-
-
-
-
-

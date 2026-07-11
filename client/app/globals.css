@@ -87,6 +87,12 @@
   }
 }
 
+@layer components {
+  .toolbar button {
+    @apply rounded-lg border border-border px-2.5 py-1 text-sm font-medium text-foreground transition-colors hover:bg-card disabled:opacity-50;
+  }
+}
+
 /* TipTap editor surface */
 .ProseMirror {
   width: auto;
