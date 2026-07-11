@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import RichContent from "@/components/common/RichContent";
+import UserBadge from "@/components/common/UserBadge";
 import { ThumbsUp } from "lucide-react";
 import { Loader } from "@/components/ui/Loader";
 import { Container } from "@/components/ui/Container";
@@ -17,6 +17,7 @@ type Content = {
   created_at: string;
   userId: string;
   userName: string;
+  userImage: string;
   upvotes: string[];
 };
 
@@ -68,19 +69,16 @@ export default function ContentDetail() {
           {content.title}
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">{content.caption}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <span>
-            By{" "}
-            <Link
-              href={`/profiles/${content.userId}`}
-              className="font-medium text-foreground hover:text-primary"
-            >
-              {content.userName}
-            </Link>
-          </span>
-          <span>{new Date(content.created_at).toLocaleDateString()}</span>
-          <span className="inline-flex items-center gap-1">
-            <ThumbsUp size={15} className="text-primary" />
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <UserBadge
+            userId={content.userId}
+            name={content.userName}
+            image={content.userImage}
+            size={44}
+            subtitle={new Date(content.created_at).toLocaleDateString()}
+          />
+          <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+            <ThumbsUp size={16} className="text-primary" />
             {content.upvotes?.length || 0}
           </span>
         </div>

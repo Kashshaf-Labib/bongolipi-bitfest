@@ -15,6 +15,7 @@ type Profile = {
     lastName: string;
     email: string;
     userId: string;
+    imageUrl: string;
   };
   contents: {
     _id: string;
@@ -74,9 +75,18 @@ export default function ProfilePage() {
       <Container>
         <Card className="p-8">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
-              {initial}
-            </div>
+            {user.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.imageUrl}
+                alt={user.firstName}
+                className="h-16 w-16 rounded-full object-cover ring-1 ring-border"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                {initial}
+              </div>
+            )}
             <div>
               <h1 className="text-2xl font-bold text-foreground">
                 {user.firstName} {user.lastName}

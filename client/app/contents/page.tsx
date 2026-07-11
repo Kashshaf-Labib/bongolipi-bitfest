@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { ThumbsUp, X, Compass } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import RichContent from "@/components/common/RichContent";
+import UserBadge from "@/components/common/UserBadge";
 import { Container } from "@/components/ui/Container";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -21,6 +21,7 @@ type Content = {
   caption: string;
   userId: string;
   userName: string;
+  userImage: string;
   created_at: string;
   content: string;
   upvotes: string[];
@@ -83,7 +84,7 @@ function PublicContents() {
           title="Explore"
           description="Discover stories published by the community."
           actions={
-            <Button variant="outline" onClick={() => router.push("/mycontents")}>
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>
               My dashboard
             </Button>
           }
@@ -125,17 +126,19 @@ function PublicContents() {
                       <p className="mt-2 flex-1 text-muted-foreground">
                         {content.caption}
                       </p>
-                      <div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-sm text-muted-foreground">
-                        <span>
-                          <Link
-                            href={`/profiles/${content.userId}`}
+                      <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted-foreground">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <UserBadge
+                            userId={content.userId}
+                            name={content.userName}
+                            image={content.userImage}
+                            size={28}
                             onClick={(e) => e.stopPropagation()}
-                            className="font-medium text-foreground hover:text-primary"
-                          >
-                            {content.userName}
-                          </Link>{" "}
-                          · {new Date(content.created_at).toLocaleDateString()}
-                        </span>
+                          />
+                          <span className="shrink-0 whitespace-nowrap text-xs">
+                            · {new Date(content.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -186,15 +189,16 @@ function PublicContents() {
             <p className="mt-1 text-muted-foreground">
               {selectedContent.caption}
             </p>
-            <div className="mt-2 text-sm text-muted-foreground">
-              By{" "}
-              <Link
-                href={`/profiles/${selectedContent.userId}`}
-                className="font-medium text-foreground hover:text-primary"
-              >
-                {selectedContent.userName}
-              </Link>{" "}
-              · {new Date(selectedContent.created_at).toLocaleDateString()}
+            <div className="mt-4">
+              <UserBadge
+                userId={selectedContent.userId}
+                name={selectedContent.userName}
+                image={selectedContent.userImage}
+                size={40}
+                subtitle={new Date(
+                  selectedContent.created_at,
+                ).toLocaleDateString()}
+              />
             </div>
             <div className="mt-6 border-t border-border pt-6">
               <RichContent html={selectedContent.content} />

@@ -1,40 +1,50 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/db/mongod";
 import { Content } from "@/db/models/Content";
-import { User } from "@/db/models/User";
+import { clerkClient } from "@clerk/nextjs/server";
 
 export async function GET() {
   await dbConnect();
 
   try {
-    const contents = await Content.find({ isPublished: true }).select(
-      "title caption userId created_at content upvotes"
-    );
+    const contents = await Content.find({ isPublished: true })
+      .select("title caption userId created_at content upvotes")
+      .sort({ created_at: -1 })
+      .lean();
 
-    // Fetch user details for each content
-    const enrichedContents = await Promise.all(
-      contents.map(async (content) => {
-        const user = await User.findOne({ userId: content.userId }).select(
-          "firstName lastName"
-        );
+    // Enrich authors from Clerk (source of truth for name + photo).
+    const userIds = [...new Set(contents.map((c) => c.userId))];
+    const userMap: Record<string, { name: string; image: string }> = {};
 
-        return {
-          _id: content._id,
-          title: content.title,
-          caption: content.caption,
-          content: content.content,
-          created_at: content.created_at,
-          userId: content.userId,
-          upvotes: content.upvotes || [],
-          userName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+    if (userIds.length) {
+      const client = await clerkClient();
+      const { data } = await client.users.getUserList({
+        userId: userIds,
+        limit: 500,
+      });
+      for (const u of data) {
+        userMap[u.id] = {
+          name: [u.firstName, u.lastName].filter(Boolean).join(" ") || "User",
+          image: u.imageUrl || "",
         };
-      })
-    );
+      }
+    }
 
-    return NextResponse.json(enrichedContents);
+    const enriched = contents.map((c) => ({
+      _id: String(c._id),
+      title: c.title,
+      caption: c.caption,
+      content: c.content,
+      created_at: c.created_at,
+      userId: c.userId,
+      upvotes: c.upvotes || [],
+      userName: userMap[c.userId]?.name || "Unknown user",
+      userImage: userMap[c.userId]?.image || "",
+    }));
+
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error("Error fetching contents:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
