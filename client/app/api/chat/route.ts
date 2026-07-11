@@ -9,13 +9,21 @@ export const GET = async (req: NextRequest) => {
     
     const { userId } = getAuth(req);
 
-    const sessionIds = await Chat.aggregate([
-      { $match: { userId } }, // Match userId
-      { $group: { _id: '$sessionId' } }, // Group by sessionId
-      { $project: { _id: 0, sessionId: '$_id' } } // Project sessionId field
+    const sessions = await Chat.aggregate([
+      { $match: { userId } },
+      { $sort: { createdAt: 1 } },
+      {
+        $group: {
+          _id: '$sessionId',
+          title: { $first: '$content' }, // first message becomes the label
+          createdAt: { $first: '$createdAt' },
+        },
+      },
+      { $sort: { createdAt: -1 } }, // newest sessions first
+      { $project: { _id: 0, sessionId: '$_id', title: 1 } },
     ]);
 
-    return NextResponse.json({sessions: sessionIds.map(({ sessionId }) => sessionId)});
+    return NextResponse.json({ sessions });
   } catch (error) {
     console.log(error);
     return NextResponse.json(

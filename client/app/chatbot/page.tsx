@@ -11,9 +11,10 @@ import {
 import { motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Upload } from "lucide-react";
+import { Upload, X, Bot } from "lucide-react";
 import { PDF_QUERY_URL } from "@/lib/const";
 import toast from "react-hot-toast";
+import { useUser } from "@clerk/nextjs";
 
 type ChatMessage = {
   _id?: string;
@@ -26,12 +27,20 @@ function ChatbotContent() {
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [loadingResponse, setLoadingResponse] = useState<boolean>(false);
   const [sessionId, setSessionId] = useState<string>("");
-  const [chatHistory, setChatHistory] = useState<string[]>([]);
+  const [chatHistory, setChatHistory] = useState<
+    { sessionId: string; title: string }[]
+  >([]);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useUser();
+
+  const removeFile = () => {
+    setFile(null);
+    if (pdfInputRef.current) pdfInputRef.current.value = "";
+  };
 
   const refreshHistory = useCallback(() => {
     fetch("/api/chat")
@@ -51,6 +60,10 @@ function ChatbotContent() {
 
   // Load the messages for the active session.
   useEffect(() => {
+    // Switching sessions should drop any pending PDF attachment.
+    setFile(null);
+    if (pdfInputRef.current) pdfInputRef.current.value = "";
+
     if (!sessionId) {
       setChats([]);
       return;
@@ -159,6 +172,7 @@ function ChatbotContent() {
     setSessionId("");
     setChats([]);
     setCurrentMessage("");
+    removeFile();
     router.push("/chatbot");
   };
 
@@ -187,8 +201,13 @@ function ChatbotContent() {
         </motion.h2>
         <ul className="space-y-2 overflow-y-auto max-h-[calc(100vh-8rem)]">
           {chatHistory.map((session, index) => (
-            <li key={"s" + index} className="p-2 rounded-md bg-white shadow truncate">
-              <Link href={`/chatbot?sessionId=${session}`}>{session}</Link>
+            <li
+              key={"s" + index}
+              className="p-2 rounded-md bg-white shadow truncate"
+            >
+              <Link href={`/chatbot?sessionId=${session.sessionId}`}>
+                {session.title || "Untitled chat"}
+              </Link>
             </li>
           ))}
         </ul>
@@ -205,11 +224,22 @@ function ChatbotContent() {
                 message.role === "user" ? "flex-row-reverse" : ""
               } justify-start items-center gap-4`}
             >
-              <span
-                className={`w-10 h-10 rounded-full ${
-                  message.role == "user" ? "bg-primary" : "bg-secondary"
-                } flex items-center justify-center`}
-              ></span>
+              {message.role === "user" ? (
+                user?.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.imageUrl}
+                    alt="You"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="w-10 h-10 rounded-full bg-primary" />
+                )
+              ) : (
+                <span className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white">
+                  <Bot size={20} />
+                </span>
+              )}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -242,7 +272,19 @@ function ChatbotContent() {
             <Upload />
           </button>
           <div className="flex-grow">
-            {file && <p className="text-sm text-gray-500">{file.name}</p>}
+            {file && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <span className="truncate max-w-[220px]">{file.name}</span>
+                <button
+                  type="button"
+                  onClick={removeFile}
+                  className="text-gray-500 hover:text-red-600"
+                  aria-label="Remove attached PDF"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
             <input
               type="text"
               placeholder="Type your message..."
