@@ -1,55 +1,34 @@
-// import { SignUp } from "@clerk/nextjs";
-
-// export default function SignInPage() {
-//   return (
-//     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-900 via-gray-800 to-blue-900">
-//       <div className="bg-gray-100 p-8 shadow-lg rounded-lg max-w-md w-full">
-//         <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
-//           Welcome Back
-//         </h2>
-//         <SignUp
-//           path="/sign-up"
-//           appearance={{
-//             variables: {
-//               colorPrimary: "#1d4ed8", // Blue accent
-//               colorBackground: "#e5e7eb", // Light background
-//               colorText: "#1f2937", // Dark text
-//             },
-//             layout: {
-//               socialButtonsPlacement: "bottom",
-//             },
-//           }}
-//         />
-//       </div>
-//     </div>
-//   );
-// }
-
+"use client";
 
 import { SignUp } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import AuthShell from "@/components/common/AuthShell";
 
 export default function SignUpPage() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-900 via-gray-800 to-blue-900">
-      <div className="bg-gray-100 p-8 shadow-lg rounded-lg max-w-md w-full">
-        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
-          Join Us
-        </h2>
-        <SignUp
-          path="/sign-up"
-          afterSignUpUrl="/after-sign-up" // Redirect after successful sign-up
-          appearance={{
-            variables: {
-              colorPrimary: "#1d4ed8", // Blue accent
-              colorBackground: "#e5e7eb", // Light background
-              colorText: "#1f2937", // Dark text
-            },
-            layout: {
-              socialButtonsPlacement: "bottom",
-            },
-          }}
-        />
-      </div>
-    </div>
+    <AuthShell
+      title="Create your account"
+      subtitle="Join the Bongolipi community"
+    >
+      <SignUp
+        path="/sign-up"
+        appearance={{
+          baseTheme: mounted && resolvedTheme === "dark" ? dark : undefined,
+          variables: { colorPrimary: "#c55a34", borderRadius: "0.75rem" },
+          elements: {
+            headerTitle: "hidden",
+            headerSubtitle: "hidden",
+            card: "shadow-warm",
+          },
+          layout: { socialButtonsPlacement: "bottom" },
+        }}
+      />
+    </AuthShell>
   );
 }

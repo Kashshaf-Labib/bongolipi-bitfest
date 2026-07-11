@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useUser } from "@clerk/nextjs"; // Correct hook for accessing user info
 import { useRouter } from "next/navigation";
+import { Loader } from "@/components/ui/Loader";
 
 export default function AfterSignUpPage() {
   const { user } = useUser(); // Access user details
@@ -44,8 +45,9 @@ export default function AfterSignUpPage() {
   }, [user, router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <p className="text-lg text-gray-700">Finalizing your setup...</p>
+    <div className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center gap-4 bg-background">
+      <Loader size={32} />
+      <p className="text-lg text-muted-foreground">Finalizing your setup…</p>
     </div>
   );
 }
