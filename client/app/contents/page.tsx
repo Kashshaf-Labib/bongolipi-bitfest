@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ThumbsUp } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
+import RichContent from "@/components/common/RichContent";
 
 type Content = {
   _id: string;
@@ -189,10 +190,8 @@ function PublicContents() {
             <p className="text-base text-gray-600 mb-6">
               {selectedContent.caption}
             </p>
-            <div className="text-gray-600 mb-4">
-              <p>
-                <strong>Content:</strong> {selectedContent.content}
-              </p>
+            <div className="text-gray-600 mb-4 max-h-[60vh] overflow-auto">
+              <RichContent html={selectedContent.content} />
             </div>
             <div className="text-sm text-gray-500">
               <p>

@@ -2,7 +2,6 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Markdown } from "tiptap-markdown";
 import { useEffect, useState } from "react";
 import Spinner from "@/components/common/Spinner";
 
@@ -15,11 +14,11 @@ const Tiptap = ({
 }) => {
   const [translationLoading, setTranslationLoading] = useState(false);
   const editor = useEditor({
-    extensions: [StarterKit, Markdown],
+    extensions: [StarterKit],
     content: initialContent,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
-      const htmlContent = editor?.storage?.markdown?.getMarkdown();
-      onContentChange(htmlContent);
+      onContentChange(editor.getHTML());
     },
   });
 
@@ -32,16 +31,12 @@ const Tiptap = ({
   const translate = async () => {
     if (!editor) return;
 
-    // Get the current selection
     const selection = editor.state.selection;
-
-    // Check if there's a selection
     if (!selection || selection.empty) {
       alert("Please select some text!");
       return;
     }
 
-    // Modify the selected text: wrap in parentheses
     const { from, to } = selection;
     const selectedText = editor.state.doc.textBetween(from, to, " ");
     const translatedText = await fetchTranslation(selectedText);
@@ -50,16 +45,7 @@ const Tiptap = ({
 
   const fetchTranslation = async (text: string) => {
     try {
-      // const url = `${BANGLISH_API}/banglish`;
-      // const options = {
-      //     method: "POST",
-      //     headers: { "Content-Type": "application/json" },
-      //     body: JSON.stringify({ text }),
-      // };
       setTranslationLoading(true);
-      // const response = await fetch(url, options);
-      // const data = await response.json();
-      // return data.generated_text;
       return _fetchTranslation(text);
     } catch (error) {
       console.log(error);
@@ -68,6 +54,11 @@ const Tiptap = ({
       setTranslationLoading(false);
     }
   };
+
+  // Keep the editor's text selection when a toolbar button is clicked, so
+  // block commands (headings/paragraph) apply to the selected block.
+  const keepSelection = (e: React.MouseEvent) => e.preventDefault();
+
   return (
     <div className="w-full">
       {/* Toolbar */}
@@ -75,6 +66,7 @@ const Tiptap = ({
         <div className="flex flex-wrap justify-start items-center gap-2 toolbar bg-white bg-opacity-15 rounded-t-md py-1">
           <button
             className="font-bold"
+            onMouseDown={keepSelection}
             onClick={() => editor.chain().focus().toggleBold().run()}
             disabled={!editor.can().chain().focus().toggleBold().run()}
             style={{ marginRight: "5px" }}
@@ -83,6 +75,7 @@ const Tiptap = ({
           </button>
           <button
             className="italic"
+            onMouseDown={keepSelection}
             onClick={() => editor.chain().focus().toggleItalic().run()}
             disabled={!editor.can().chain().focus().toggleItalic().run()}
             style={{ marginRight: "5px" }}
@@ -90,6 +83,7 @@ const Tiptap = ({
             I
           </button>
           <button
+            onMouseDown={keepSelection}
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 1 }).run()
             }
@@ -98,6 +92,7 @@ const Tiptap = ({
             H1
           </button>
           <button
+            onMouseDown={keepSelection}
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 2 }).run()
             }
@@ -106,23 +101,31 @@ const Tiptap = ({
             H2
           </button>
           <button
+            onMouseDown={keepSelection}
             onClick={() => editor.chain().focus().setParagraph().run()}
             style={{ marginRight: "5px" }}
           >
             p
           </button>
           <button
+            onMouseDown={keepSelection}
             onClick={() => editor.chain().focus().undo().run()}
             style={{ marginRight: "5px" }}
           >
             ↩
           </button>
-          <button onClick={() => editor.chain().focus().redo().run()}>↪</button>
+          <button
+            onMouseDown={keepSelection}
+            onClick={() => editor.chain().focus().redo().run()}
+          >
+            ↪
+          </button>
 
           <div className="px-4">
             <button
               disabled={translationLoading}
               className="bg-primary text-white"
+              onMouseDown={keepSelection}
               onClick={translate}
             >
               {translationLoading ? <Spinner /> : "Translate"}
@@ -150,5 +153,3 @@ const _fetchTranslation = async (inputText: string) => {
   const data = await res.json();
   return data.banglaText;
 };
-
-

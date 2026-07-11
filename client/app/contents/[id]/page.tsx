@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import MarkdownPreview from "@uiw/react-markdown-preview";
+import RichContent from "@/components/common/RichContent";
 import { ThumbsUp } from "lucide-react";
 import Spinner from "@/components/common/Spinner";
 
@@ -69,10 +69,7 @@ export default function ContentDetail() {
         </span>
       </div>
       <div className="p-6 bg-white rounded-lg border shadow">
-        <MarkdownPreview
-          style={{ backgroundColor: "transparent" }}
-          source={content.content}
-        />
+        <RichContent html={content.content} />
       </div>
     </div>
   );
