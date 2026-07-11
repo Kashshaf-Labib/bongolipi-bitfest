@@ -132,7 +132,6 @@ export default function AdminDashboard() {
       fetchAnalytics();
       fetchContributions();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, isAdmin, router]);
 
   const chartData = {
