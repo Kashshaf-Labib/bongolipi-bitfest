@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import RichContent from "@/components/common/RichContent";
 import { ThumbsUp } from "lucide-react";
-import Spinner from "@/components/common/Spinner";
+import { Loader } from "@/components/ui/Loader";
+import { Container } from "@/components/ui/Container";
+import { Card, CardBody } from "@/components/ui/Card";
 
 type Content = {
   _id: string;
@@ -43,34 +45,42 @@ export default function ContentDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner />
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+        <Loader size={32} />
       </div>
     );
   }
 
   if (notFound || !content) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center text-muted-foreground">
         Content not found.
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-12 max-w-4xl mx-auto px-4">
-      <h1 className="text-4xl font-bold text-gray-800 mb-2">{content.title}</h1>
-      <p className="text-lg text-gray-600 mb-4">{content.caption}</p>
-      <div className="flex items-center gap-4 text-sm text-gray-500 mb-8">
-        <span>By {content.userName}</span>
-        <span>{new Date(content.created_at).toLocaleDateString()}</span>
-        <span className="flex items-center gap-1">
-          <ThumbsUp size={16} /> {content.upvotes?.length || 0}
-        </span>
-      </div>
-      <div className="p-6 bg-white rounded-lg border shadow">
-        <RichContent html={content.content} />
-      </div>
+    <div className="min-h-[calc(100vh-64px)] py-12">
+      <Container className="max-w-3xl">
+        <h1 className="font-balooda text-3xl font-bold text-balance text-foreground sm:text-4xl">
+          {content.title}
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground">{content.caption}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+          <span>By {content.userName}</span>
+          <span>{new Date(content.created_at).toLocaleDateString()}</span>
+          <span className="inline-flex items-center gap-1">
+            <ThumbsUp size={15} className="text-primary" />
+            {content.upvotes?.length || 0}
+          </span>
+        </div>
+
+        <Card className="mt-8">
+          <CardBody className="p-8">
+            <RichContent html={content.content} />
+          </CardBody>
+        </Card>
+      </Container>
     </div>
   );
 }

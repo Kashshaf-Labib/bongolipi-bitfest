@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ThumbsUp } from "lucide-react";
-import Spinner from "@/components/common/Spinner";
+import { ThumbsUp, FileText } from "lucide-react";
+import { Loader } from "@/components/ui/Loader";
+import { Container } from "@/components/ui/Container";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Profile = {
   user: {
@@ -49,54 +52,77 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner />
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+        <Loader size={32} />
       </div>
     );
   }
 
   if (notFound || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center text-muted-foreground">
         User not found.
       </div>
     );
   }
 
   const { user, contents } = profile;
+  const initial = (user.firstName?.[0] || "?").toUpperCase();
 
   return (
-    <div className="min-h-screen py-12 max-w-4xl mx-auto px-4">
-      <div className="p-6 bg-white rounded-lg border shadow mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          {user.firstName} {user.lastName}
-        </h1>
-        <p className="text-gray-500">{user.email}</p>
-      </div>
+    <div className="min-h-[calc(100vh-64px)] py-12">
+      <Container>
+        <Card className="p-8">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+              {initial}
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                {user.firstName} {user.lastName}
+              </h1>
+              <p className="text-muted-foreground">{user.email}</p>
+            </div>
+          </div>
+        </Card>
 
-      <h2 className="text-2xl font-bold text-primary mb-4">Published Contents</h2>
-      {contents.length === 0 ? (
-        <p className="text-gray-500">No published contents yet.</p>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {contents.map((c) => (
-            <Link
-              key={c._id}
-              href={`/contents/${c._id}`}
-              className="p-4 bg-white rounded-lg border shadow hover:shadow-lg transition"
-            >
-              <h3 className="text-xl font-bold text-gray-800">{c.title}</h3>
-              <p className="text-gray-600 mb-2">{c.caption}</p>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <ThumbsUp size={14} /> {c.upvotes?.length || 0}
-                <span className="ml-auto">
-                  {new Date(c.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            </Link>
-          ))}
+        <h2 className="mt-10 font-balooda text-2xl font-bold text-foreground">
+          Published contents
+        </h2>
+
+        <div className="mt-4">
+          {contents.length === 0 ? (
+            <EmptyState
+              icon={<FileText size={22} />}
+              title="No published contents yet"
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {contents.map((c) => (
+                <Link key={c._id} href={`/contents/${c._id}`}>
+                  <Card className="h-full p-5 transition-shadow hover:shadow-warm-lg">
+                    <h3 className="text-lg font-bold text-foreground">
+                      {c.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {c.caption}
+                    </p>
+                    <div className="mt-4 flex items-center gap-3 text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <ThumbsUp size={14} className="text-primary" />
+                        {c.upvotes?.length || 0}
+                      </span>
+                      <span className="ml-auto">
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </Container>
     </div>
   );
 }
