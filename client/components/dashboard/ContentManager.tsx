@@ -11,6 +11,7 @@ import {
   MessageCircle,
   HandHeart,
   Heart,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -223,6 +224,11 @@ export default function ContentManager() {
                 </div>
 
                 <div className="flex items-center gap-1">
+                  <Link href={`/collab/${content._id}`}>
+                    <Button variant="ghost" size="icon" aria-label="Collaborate">
+                      <Users size={18} />
+                    </Button>
+                  </Link>
                   <Button
                     variant="ghost"
                     size="icon"

@@ -13,15 +13,35 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      # Browser talks to the RAG service directly, so use the host-mapped port.
+      # Browser talks to these services directly, so use host-mapped ports.
       - NEXT_PUBLIC_PDF_QUERY_URL=http://localhost:8000
+      - NEXT_PUBLIC_COLLAB_URL=ws://localhost:1234
+      - COLLAB_SECRET=${COLLAB_SECRET}
     depends_on:
       - mongo
       - server
+      - collab
     volumes:
       - ./client:/app
       - /app/node_modules
     command: ["npm", "run", "dev"]
+
+  collab:
+    build:
+      context: ./collab
+    ports:
+      - "1234:1234"
+    environment:
+      - PORT=1234
+      - COLLAB_SECRET=${COLLAB_SECRET}
+      - MONGODB_URI=mongodb://mongo:27017
+      - DBNAME=bongolipi
+    depends_on:
+      - mongo
+    volumes:
+      - ./collab:/app
+      - /app/node_modules
+    command: ["node", "index.js"]
 
   server:
     build:
