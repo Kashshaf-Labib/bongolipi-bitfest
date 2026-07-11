@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ThumbsUp, X, Compass } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
@@ -126,8 +127,14 @@ function PublicContents() {
                       </p>
                       <div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-sm text-muted-foreground">
                         <span>
-                          {content.userName} ·{" "}
-                          {new Date(content.created_at).toLocaleDateString()}
+                          <Link
+                            href={`/profiles/${content.userId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-medium text-foreground hover:text-primary"
+                          >
+                            {content.userName}
+                          </Link>{" "}
+                          · {new Date(content.created_at).toLocaleDateString()}
                         </span>
                         <button
                           onClick={(e) => {
@@ -180,8 +187,14 @@ function PublicContents() {
               {selectedContent.caption}
             </p>
             <div className="mt-2 text-sm text-muted-foreground">
-              By {selectedContent.userName} ·{" "}
-              {new Date(selectedContent.created_at).toLocaleDateString()}
+              By{" "}
+              <Link
+                href={`/profiles/${selectedContent.userId}`}
+                className="font-medium text-foreground hover:text-primary"
+              >
+                {selectedContent.userName}
+              </Link>{" "}
+              · {new Date(selectedContent.created_at).toLocaleDateString()}
             </div>
             <div className="mt-6 border-t border-border pt-6">
               <RichContent html={selectedContent.content} />

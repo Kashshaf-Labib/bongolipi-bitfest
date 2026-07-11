@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import RichContent from "@/components/common/RichContent";
 import { ThumbsUp } from "lucide-react";
 import { Loader } from "@/components/ui/Loader";
@@ -14,6 +15,7 @@ type Content = {
   caption: string;
   content: string;
   created_at: string;
+  userId: string;
   userName: string;
   upvotes: string[];
 };
@@ -67,7 +69,15 @@ export default function ContentDetail() {
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">{content.caption}</p>
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <span>By {content.userName}</span>
+          <span>
+            By{" "}
+            <Link
+              href={`/profiles/${content.userId}`}
+              className="font-medium text-foreground hover:text-primary"
+            >
+              {content.userName}
+            </Link>
+          </span>
           <span>{new Date(content.created_at).toLocaleDateString()}</span>
           <span className="inline-flex items-center gap-1">
             <ThumbsUp size={15} className="text-primary" />
