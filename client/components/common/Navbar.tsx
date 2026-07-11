@@ -6,7 +6,6 @@ import ThemeToggle from "./ThemeToggle";
 import SearchBox from "./SearchBox";
 import { useAuth, useUser, UserButton } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -80,15 +79,7 @@ export default function Navbar() {
               appearance={{ elements: { userButtonAvatarBox: "w-9 h-9" } }}
               userProfileMode="navigation"
               userProfileUrl="/dashboard"
-            >
-              <UserButton.MenuItems>
-                <UserButton.Link
-                  label="Dashboard"
-                  labelIcon={<LayoutDashboard size={16} />}
-                  href="/dashboard"
-                />
-              </UserButton.MenuItems>
-            </UserButton>
+            />
           ) : (
             <Button size="sm" onClick={() => router.push("/sign-in")}>
               Login
