@@ -1,44 +1,34 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
-    <footer className="bg-blue-900 text-white py-6">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
-        {/* Logo */}
-        <div className="text-lg font-semibold">
-          বঙ্গলিপি <span className="text-blue-300">| Bangla Made Simple</span>
+    <footer className="border-t border-border bg-card">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-5 px-6 py-8 text-center sm:flex-row sm:justify-between sm:text-left">
+        <div>
+          <p className="font-balooda text-lg font-bold text-foreground">
+            <span className="text-primary">ব</span>ঙ্গলিপি
+          </p>
+          <p className="text-sm text-muted-foreground">Bangla, made simple.</p>
         </div>
 
-        {/* Links */}
-        <ul className="flex gap-6 mt-4 md:mt-0 text-sm">
-          <li>
-            <a
-              href="/about"
-              className="hover:text-blue-300 transition duration-200"
-            >
-              About
-            </a>
-          </li>
-          <li>
-            <a
-              href="/features"
-              className="hover:text-blue-300 transition duration-200"
-            >
-              Features
-            </a>
-          </li>
-          <li>
-            <a
-              href="/contact"
-              className="hover:text-blue-300 transition duration-200"
-            >
-              Contact
-            </a>
-          </li>
-        </ul>
+        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <Link href="/converter" className="transition-colors hover:text-primary">
+            Converter
+          </Link>
+          <Link href="/contents" className="transition-colors hover:text-primary">
+            Contents
+          </Link>
+          <Link href="/chatbot" className="transition-colors hover:text-primary">
+            Chatbot
+          </Link>
+          <Link href="/contribute" className="transition-colors hover:text-primary">
+            Contribute
+          </Link>
+        </nav>
 
-        {/* Copyright */}
-        <div className="mt-4 md:mt-0 text-sm text-gray-400">
-          © {new Date().getFullYear()} BongoLipi. All rights reserved.
-        </div>
+        <p className="text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Bongolipi
+        </p>
       </div>
     </footer>
   );

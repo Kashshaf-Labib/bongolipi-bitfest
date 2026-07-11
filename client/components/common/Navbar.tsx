@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import MobileSidebar from "./MobileSidebar";
+import ThemeToggle from "./ThemeToggle";
 import { Search, User, FileText } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth, useUser, UserButton } from "@clerk/nextjs";
-import Button from "./Button";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import Button from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 type SearchResult = {
   _id?: string;
@@ -18,16 +20,24 @@ type SearchResult = {
   caption?: string;
 };
 
+const navLinks = [
+  { label: "Home", href: "/" },
+  { label: "Converter", href: "/converter" },
+  { label: "Contents", href: "/contents" },
+  { label: "Chatbot", href: "/chatbot" },
+  { label: "Contribute", href: "/contribute" },
+];
+
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { isSignedIn } = useAuth();
-  const { user } = useUser(); // Correct way to access user metadata on the client-side
+  const { user } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = user?.publicMetadata?.role === "admin"; // Validate admin role
+  const isAdmin = user?.publicMetadata?.role === "admin";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,7 +45,7 @@ export default function Navbar() {
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setSearchResults([]); // Close dropdown when clicking outside
+        setSearchResults([]);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -45,137 +55,125 @@ export default function Navbar() {
   const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-
     if (query.length < 2) {
       setSearchResults([]);
       return;
     }
-
-    setIsLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${query}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setSearchResults([...data.users, ...data.contents]);
+      setSearchResults([...(data.users || []), ...(data.contents || [])]);
     } catch (error) {
       console.error("Search error:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+
   return (
-    <div className="sticky top-0 z-50">
-      <div className="flex px-6 py-3 shadow-lg bg-gradient-to-r from-blue-900 via-gray-800 to-blue-900 text-white gap-4 justify-between items-center">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
         {/* Logo */}
-        <Link href={"/"}>
-          <h1 className="text-bold text-3xl font-balooda tracking-wide hover:scale-110 transition-transform">
-            বঙ্গলিপি
-          </h1>
+        <Link href="/" className="shrink-0">
+          <span className="font-balooda text-2xl font-bold tracking-wide text-foreground transition-transform hover:scale-105">
+            <span className="text-primary">ব</span>ঙ্গলিপি
+          </span>
         </Link>
 
-        {/* Search Bar */}
-        <div className="relative w-1/2">
-          <form className="hidden lg:flex items-center bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-full shadow-inner overflow-hidden">
+        {/* Search (desktop) */}
+        <div className="relative mx-2 hidden max-w-md flex-1 lg:block" ref={dropdownRef}>
+          <div className="flex items-center rounded-full border border-border bg-card px-3 focus-within:border-ring">
+            <Search size={18} className="text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search for PDFs, profiles, or content..."
+              placeholder="Search people or content…"
               value={searchQuery}
               onChange={handleSearchChange}
-              className="flex-grow px-4 py-2 text-white bg-transparent text-sm outline-none placeholder-gray-300"
+              className="w-full bg-transparent px-2 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-gradient-to-r from-blue-800 to-blue-600 text-white hover:from-blue-700 hover:to-blue-500 transition"
-            >
-              <Search />
-            </button>
-          </form>
+          </div>
 
-          {/* Dropdown */}
           {searchResults.length > 0 && (
-            <div
-              ref={dropdownRef}
-              className="absolute mt-2 w-full bg-white text-gray-800 shadow-lg rounded-md max-h-60 overflow-auto z-50"
-            >
-              {searchResults.map((result: SearchResult, index) => (
+            <div className="absolute mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-border bg-card shadow-warm-lg">
+              {searchResults.map((result, index) => (
                 <Link
+                  key={index}
                   href={
-                    result.userId
+                    result.firstName
                       ? `/profiles/${result.userId}`
                       : `/contents/${result._id}`
                   }
-                  key={index}
-                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-200"
+                  onClick={() => setSearchResults([])}
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-muted"
                 >
-                  <div>
+                  <span className="truncate text-foreground">
                     {result.firstName
-                      ? `${result.firstName} ${result.lastName} (${result.email})`
-                      : `${result.title}: ${result.caption}`}
-                  </div>
-                  <div>
-                    {result.firstName ? (
-                      <User className="text-gray-500" size={20} />
-                    ) : (
-                      <FileText className="text-blue-500" size={20} />
-                    )}
-                  </div>
+                      ? `${result.firstName} ${result.lastName}`
+                      : result.title}
+                  </span>
+                  {result.firstName ? (
+                    <User size={16} className="shrink-0 text-muted-foreground" />
+                  ) : (
+                    <FileText size={16} className="shrink-0 text-primary" />
+                  )}
                 </Link>
               ))}
-              {isLoading && (
-                <p className="px-4 py-2 text-sm text-gray-500">Loading...</p>
-              )}
             </div>
           )}
         </div>
 
-        {/* Desktop Menu */}
-        <div className="hidden lg:flex gap-6 items-center">
-          <ul className="flex gap-6 pr-4 text-sm items-center">
-            {["Home", "Converter", "Contents", "Chatbot", "Contribute"].map(
-              (item, index) => (
-                <li
-                  key={index}
-                  className="font-semibold hover:text-blue-400 transition-colors duration-300"
-                >
-                  <Link href={item === "Home" ? "/" : `/${item.toLowerCase()}`}>
-                    {item}
-                  </Link>
-                </li>
-              )
-            )}
-            {/* Admin Option */}
+        <div className="ml-auto flex items-center gap-2">
+          {/* Nav links (desktop) */}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                  isActive(link.href)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
             {isAdmin && (
-              <li className="font-semibold hover:text-blue-400 transition-colors duration-300">
-                <Link href="/admin">Admin</Link>
-              </li>
+              <Link
+                href="/admin"
+                className={cn(
+                  "rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                  isActive("/admin")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                Admin
+              </Link>
             )}
-          </ul>
+          </nav>
 
-          {/* Authentication */}
+          <ThemeToggle />
+
           {isSignedIn ? (
             <UserButton
               appearance={{
-                elements: {
-                  userButtonAvatarBox: "w-10 h-10",
-                  userButtonPopoverCard: "w-72 h-auto",
-                },
+                elements: { userButtonAvatarBox: "w-9 h-9" },
               }}
             />
           ) : (
-            <Button
-              type="button"
-              title="Login"
-              icon="/user.svg"
-              variant="btn_primary"
-              onClick={() => router.push("/sign-in")}
-            />
+            <Button size="sm" onClick={() => router.push("/sign-in")}>
+              Login
+            </Button>
           )}
-        </div>
 
-        <div className="lg:hidden z-20">
-          <MobileSidebar />
+          <div className="lg:hidden">
+            <MobileSidebar />
+          </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 }
