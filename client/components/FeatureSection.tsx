@@ -1,105 +1,78 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FaMagic, FaRobot, FaSearch, FaMicrophone, FaEdit, FaChartBar, FaFont } from "react-icons/fa";
+import {
+  Languages,
+  PenLine,
+  Bot,
+  Search,
+  Mic,
+  HeartHandshake,
+} from "lucide-react";
 
 const features = [
   {
-    icon: <FaMagic size={40} />,
-    name: "Banglish to Bangla Conversion",
-    description: "Easily convert Banglish text into beautiful Bangla with high accuracy using our robust translation model.",
+    icon: Languages,
+    name: "Banglish → Bangla",
+    desc: "Convert Banglish into natural Bangla instantly, and fine-tune the result as you write.",
   },
   {
-    icon: <FaEdit size={40} />,
-    name: "Content Creation & Management",
-    description:
-      "Write stories or paragraphs in Banglish and convert them into Bangla. Export them as PDFs with AI-generated titles and captions.",
+    icon: PenLine,
+    name: "Write & publish",
+    desc: "Compose stories in a rich editor, publish them, and export clean, selectable Bangla PDFs.",
   },
   {
-    icon: <FaSearch size={40} />,
-    name: "App-Wide Search",
-    description: "Search for user-uploaded PDFs and profiles effortlessly using Bangla or Banglish queries.",
+    icon: Bot,
+    name: "AI chatbot",
+    desc: "Chat in Bangla or Banglish — even ask questions about your own uploaded PDFs.",
   },
   {
-    icon: <FaRobot size={40} />,
-    name: "Interactive Chatbot",
-    description:
-      "Chat with an AI-powered bot in Bangla or Banglish. Get PDF-based query responses with accurate Bangla outputs.",
+    icon: Search,
+    name: "Search everything",
+    desc: "Find people and published content across the app using Bangla or Banglish queries.",
   },
   {
-    icon: <FaMicrophone size={40} />,
-    name: "Voice Interaction",
-    description:
-      "Input text using voice in Bangla or English. Let the chatbot respond with voice outputs in Bangla.",
+    icon: Mic,
+    name: "Voice to text",
+    desc: "Speak instead of typing and turn your voice into text in seconds.",
   },
   {
-    icon: <FaMagic size={40} />,
-    name: "Smart Editor",
-    description: "Automatically correct common typing errors in Banglish for a smoother experience.",
-  },
-  {
-    icon: <FaEdit size={40} />,
-    name: "Real-Time Collaboration",
-    description: "Collaborate with multiple users in real time to create or translate content seamlessly.",
-  },
-  {
-    icon: <FaChartBar size={40} />,
-    name: "Analytics Dashboard",
-    description:
-      "Track metrics like words translated, stories written, and chatbot interactions with detailed analytics.",
-  },
-  {
-    icon: <FaFont size={40} />,
-    name: "Customizable Fonts",
-    description: "Choose from a variety of Bangla fonts when generating PDFs for a personalized experience.",
-  },
-  {
-    icon: <FaMagic size={40} />,
-    name: "Training with Continuous Learning",
-    description: "Contribute new Banglish-Bangla text pairs to improve the translation system over time.",
+    icon: HeartHandshake,
+    name: "Community-powered",
+    desc: "Contribute Banglish–Bangla pairs that help the translation keep getting better.",
   },
 ];
 
 export default function FeatureSection() {
   return (
-    <section className="py-20 bg-gradient-to-b from-blue-100 to-white">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-4xl font-bold text-gray-800 mb-8"
-        >
-          Explore Our Features
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className="text-lg text-gray-600 mb-16"
-        >
-          Experience innovation with these amazing features designed to enhance your Bangla communication.
-        </motion.p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-          {features.map((feature, index) => (
+    <section className="py-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="font-balooda text-3xl font-bold text-foreground sm:text-4xl">
+            Everything you need for Bangla
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            A focused set of features — done well.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f, i) => (
             <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{
-                duration: 0.6,
-                delay: index * 0.2,
-                ease: "easeOut",
-              }}
-              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition"
+              key={f.name}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.06 }}
+              className="rounded-2xl border border-border bg-card p-6 shadow-warm transition-shadow hover:shadow-warm-lg"
             >
-              <div className="flex items-center justify-center text-blue-600 mb-4">
-                {feature.icon}
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <f.icon size={24} />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                {feature.name}
+              <h3 className="mt-4 text-lg font-semibold text-foreground">
+                {f.name}
               </h3>
-              <p className="text-gray-600">{feature.description}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
             </motion.div>
           ))}
         </div>

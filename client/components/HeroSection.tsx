@@ -1,109 +1,78 @@
-// "use client";
-
-// import { motion } from "framer-motion";
-// import { useRouter } from "next/navigation";
-
-// export default function HeroSection() {
-//   const router = useRouter();
-
-//   return (
-//     <div className="relative w-full h-screen bg-gradient-to-b from-white to-blue-500">
-//       {/* Animated Heading */}
-//       <motion.div
-//         initial={{ opacity: 0, y: -30 }}
-//         animate={{ opacity: 1, y: 0 }}
-//         transition={{ duration: 1, ease: "easeInOut" }}
-//         className="absolute inset-0 flex flex-col items-center justify-center text-center gap-6 z-10"
-//       >
-//         <h1 className="text-5xl md:text-6xl font-bold text-white tracking-wide">
-//           Empower Your World in Bangla
-//         </h1>
-//         <p className="text-lg md:text-xl text-white max-w-2xl">
-//           Seamlessly bridge the gap between Banglish and Bangla while exploring innovative features designed for you.
-//         </p>
-
-//         {/* Buttons */}
-//         <div className="flex gap-6">
-//           <motion.button
-//             onClick={() => router.push("/sign-up")}
-//             className="px-8 py-3 bg-blue-700 hover:bg-white text-white text-lg font-semibold rounded-full shadow-lg transition"
-//             whileHover={{ scale: 1.05 }}
-//             whileTap={{ scale: 0.95 }}
-//           >
-//             Join Us
-//           </motion.button>
-//           <motion.button
-//             onClick={() => router.push("/features")}
-//             className="px-8 py-3 bg-indigo-700 hover:bg-indigo-600 text-white text-lg font-semibold rounded-full shadow-lg transition"
-//             whileHover={{ scale: 1.05 }}
-//             whileTap={{ scale: 0.95 }}
-//           >
-//             Explore Features
-//           </motion.button>
-//         </div>
-//       </motion.div>
-
-//       {/* Animated Gradient Overlay */}
-//       <motion.div
-//         initial={{ opacity: 0 }}
-//         animate={{ opacity: 1 }}
-//         transition={{ duration: 1.5, ease: "easeInOut" }}
-//         className="absolute inset-0 bg-gradient-to-b from-transparent to-blue-700 z-0"
-//       />
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { ArrowRight, Sparkles } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 export default function HeroSection() {
   const router = useRouter();
 
   return (
-    <div
-      className="relative w-full h-screen bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/Header.jpg')" }} // Replace with your image path
-    >
-      {/* Overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-blue-300/70 to-blue-500/70"></div>
+    <section className="relative overflow-hidden bg-warm-glow">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:py-28">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center lg:text-left"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
+            <Sparkles size={14} className="text-secondary" /> বাংলিশ → বাংলা
+          </span>
 
-      {/* Animated Content */}
-      <motion.div
-        initial={{ opacity: 0, x: 30 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1, ease: "easeInOut" }}
-        className="absolute right-10 top-1/2 transform -translate-y-1/2 flex flex-col items-end text-right gap-6 z-10"
-      >
-        <h1 className="text-5xl md:text-6xl font-bold text-white tracking-wide">
-          Empower Your World in Bangla
-        </h1>
-        <p className="text-lg md:text-xl text-white max-w-lg">
-          Seamlessly bridge the gap between Banglish and Bangla while exploring innovative features designed for you.
-        </p>
+          <h1 className="mt-5 font-balooda text-4xl font-bold leading-tight text-foreground text-balance sm:text-5xl lg:text-6xl">
+            Write Banglish. Get beautiful{" "}
+            <span className="text-primary">বাংলা</span>.
+          </h1>
 
-        {/* Buttons */}
-        <div className="flex gap-4">
-          <motion.button
-            onClick={() => router.push("/sign-up")}
-            className="px-8 py-3 bg-blue-700 hover:bg-white text-white hover:text-blue-700 text-lg font-semibold rounded-full shadow-lg transition"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Join Us
-          </motion.button>
-          <motion.button
-            onClick={() => router.push("/features")}
-            className="px-8 py-3 bg-indigo-700 hover:bg-indigo-600 text-white text-lg font-semibold rounded-full shadow-lg transition"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Explore Features
-          </motion.button>
-        </div>
-      </motion.div>
-    </div>
+          <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground lg:mx-0">
+            Convert Banglish to Bangla, write and share stories, and chat in
+            Bangla — all in one warm, community-driven space.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            <Button size="lg" onClick={() => router.push("/sign-up")}>
+              Get started <ArrowRight size={18} />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => router.push("/converter")}
+            >
+              Try the converter
+            </Button>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+        >
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-warm-lg">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Banglish
+            </p>
+            <p className="mt-1 text-lg text-foreground">
+              Ajke amar mon onek bhalo
+            </p>
+
+            <div className="my-4 flex items-center gap-3 text-primary">
+              <div className="h-px flex-1 bg-border" />
+              <ArrowRight size={18} />
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              বাংলা
+            </p>
+            <p className="mt-1 font-bengali text-xl text-foreground">
+              আজকে আমার মন অনেক ভালো
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    </section>
   );
 }
