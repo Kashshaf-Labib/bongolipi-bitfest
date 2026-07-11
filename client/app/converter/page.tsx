@@ -1,22 +1,27 @@
 "use client";
+
 import { BANGLISH_API } from "@/lib/const";
-import { ArrowBigRight } from "lucide-react";
+import { ArrowRight, Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { Container } from "@/components/ui/Container";
+import { PageHeader } from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Input";
 
 export default function Converter() {
   const [banglish, setBanglish] = useState("");
   const [bangla, setBangla] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const onTranslate = async () => {
     try {
-      if (!banglish) return;
+      if (!banglish.trim()) return;
       setBangla("");
       setLoading(true);
 
       let translated = "";
       if (BANGLISH_API) {
-        // Custom fine-tuned model service.
         const response = await fetch(`${BANGLISH_API}/banglish`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -25,7 +30,6 @@ export default function Converter() {
         const data = await response.json();
         translated = data.generated_text;
       } else {
-        // Fallback to the Groq-backed translator when no model is configured.
         const response = await fetch("/api/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -42,43 +46,76 @@ export default function Converter() {
       setLoading(false);
     }
   };
+
+  const copyOut = async () => {
+    if (!bangla) return;
+    await navigator.clipboard.writeText(bangla);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
-    <div className="min-h-screen">
-      <div className="py-12">
-        <h1 className="text-center text-2xl font-bold">
-          Banglish to Bangla সহজে লিখুন বাংলায়
-        </h1>
-        <p className="py-4 flex gap-2 justify-center items-center text-lg">
-          <span>Ajke amar mon bhalo nei</span> <ArrowBigRight /> আজকে আমার মন
-          ভালো নেই
-        </p>
-      </div>
+    <div className="min-h-[calc(100vh-64px)] bg-warm-glow py-14">
+      <Container>
+        <PageHeader
+          title="Banglish → Bangla"
+          description="Type in Banglish and get natural Bangla. সহজে লিখুন বাংলায়।"
+        />
 
-      <div className="py-12 px-4">
-        <div className="grid md:grid-cols-2 gap-4 items-stretch w-full">
-          <textarea
-            value={banglish}
-            onChange={(e) => setBanglish(e.target.value)}
-            className="p-4 shadow bg-white rounded border min-h-40"
-            placeholder="Ekhane kichu ekta likhun..."
-          ></textarea>
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-warm">
+            <label className="mb-2 block text-sm font-medium text-muted-foreground">
+              Banglish
+            </label>
+            <Textarea
+              value={banglish}
+              onChange={(e) => setBanglish(e.target.value)}
+              placeholder="Ekhane kichu ekta likhun…"
+              className="min-h-52 border-0 bg-transparent px-0 focus:border-0"
+            />
+          </div>
 
-          <textarea
-            value={bangla}
-            readOnly
-            className="p-4 shadow bg-white rounded border min-h-40"
-            placeholder="এখানে বাংলা লেখা দেখতে পাবেন..."
-          ></textarea>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-warm">
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-sm font-medium text-muted-foreground">
+                বাংলা
+              </label>
+              {bangla && (
+                <button
+                  onClick={copyOut}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              )}
+            </div>
+            <Textarea
+              readOnly
+              value={bangla}
+              placeholder="এখানে বাংলা দেখতে পাবেন…"
+              className="min-h-52 border-0 bg-transparent px-0 font-bengali focus:border-0"
+            />
+          </div>
         </div>
-        <button
-          onClick={onTranslate}
-          disabled={loading}
-          className="bg-primary p-4 rounded font-semibold text-white mt-4"
-        >
-          {loading ? "Translating..." : "Translate"}
-        </button>
-      </div>
+
+        <div className="mt-6 flex justify-center">
+          <Button
+            size="lg"
+            onClick={onTranslate}
+            loading={loading}
+            disabled={!banglish.trim()}
+          >
+            {loading ? (
+              "Translating…"
+            ) : (
+              <>
+                Translate <ArrowRight size={18} />
+              </>
+            )}
+          </Button>
+        </div>
+      </Container>
     </div>
   );
 }
-
