@@ -3,9 +3,15 @@
 import { useEffect, useState } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { motion } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { Users, FileText, Clock, CheckCircle2 } from "lucide-react";
+import { Container } from "@/components/ui/Container";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card, CardBody } from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Loader } from "@/components/ui/Loader";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -30,9 +36,6 @@ export default function AdminDashboard() {
   const isAdmin = user?.publicMetadata?.role === "admin";
 
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [error, setError] = useState("");
-
   const [pendingContributions, setPendingContributions] = useState<
     Contribution[]
   >([]);
@@ -40,39 +43,28 @@ export default function AdminDashboard() {
     Contribution[]
   >([]);
 
-  // Fetch analytics
   const fetchAnalytics = async () => {
-    setLoadingAnalytics(true);
-    setError("");
-
     try {
       const response = await fetch("/api/admin/analytics");
       const data = await response.json();
       setAnalytics(data);
     } catch {
-      setError("Failed to fetch analytics. Please try again later.");
-    } finally {
-      setLoadingAnalytics(false);
+      // ignore
     }
   };
 
-  // Fetch contributions
   const fetchContributions = async () => {
     try {
       const response = await fetch("/api/contributions");
       const data = await response.json();
-
-      const pending = data.filter(
-        (contribution: Contribution) => !contribution.isApproved
+      setPendingContributions(
+        data.filter((c: Contribution) => !c.isApproved),
       );
-      const approved = data.filter(
-        (contribution: Contribution) => contribution.isApproved
+      setApprovedContributions(
+        data.filter((c: Contribution) => c.isApproved),
       );
-
-      setPendingContributions(pending);
-      setApprovedContributions(approved);
     } catch {
-      setError("Failed to fetch contributions. Please try again later.");
+      // ignore
     }
   };
 
@@ -80,21 +72,18 @@ export default function AdminDashboard() {
     try {
       const response = await fetch("/api/contributions", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to approve contribution.");
-      }
-
-      // Update state after approval
-      setPendingContributions((prev) =>
-        prev.filter((contribution) => contribution._id !== id)
-      );
-      fetchAnalytics(); // Refresh analytics
+      if (!response.ok) throw new Error("Failed");
+      const approved = pendingContributions.find((c) => c._id === id);
+      setPendingContributions((prev) => prev.filter((c) => c._id !== id));
+      if (approved)
+        setApprovedContributions((prev) => [
+          { ...approved, isApproved: true },
+          ...prev,
+        ]);
+      fetchAnalytics();
     } catch {
       alert("Failed to approve contribution. Please try again.");
     }
@@ -105,19 +94,10 @@ export default function AdminDashboard() {
       const response = await fetch(`/api/contributions/${id}`, {
         method: "DELETE",
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete contribution.");
-      }
-
-      // Update state after deletion
-      setPendingContributions((prev) =>
-        prev.filter((contribution) => contribution._id !== id)
-      );
-      setApprovedContributions((prev) =>
-        prev.filter((contribution) => contribution._id !== id)
-      );
-      fetchAnalytics(); // Refresh analytics
+      if (!response.ok) throw new Error("Failed");
+      setPendingContributions((prev) => prev.filter((c) => c._id !== id));
+      setApprovedContributions((prev) => prev.filter((c) => c._id !== id));
+      fetchAnalytics();
     } catch {
       alert("Failed to delete contribution. Please try again.");
     }
@@ -134,194 +114,196 @@ export default function AdminDashboard() {
     }
   }, [isLoaded, isAdmin, router]);
 
-  const chartData = {
-    labels: ["Pending Contributions", "Approved Contributions"],
-    datasets: [
-      {
-        data: [
-          analytics?.totalPendingContributions || 0,
-          analytics?.totalApprovedContributions || 0,
-        ],
-        backgroundColor: ["#f87171", "#4ade80"],
-        hoverBackgroundColor: ["#f87171", "#4ade80"],
-      },
-    ],
-  };
-
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading...
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+        <Loader size={30} />
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center text-muted-foreground">
         Access denied.
       </div>
     );
   }
 
+  const chartData = {
+    labels: ["Pending", "Approved"],
+    datasets: [
+      {
+        data: [
+          analytics?.totalPendingContributions || 0,
+          analytics?.totalApprovedContributions || 0,
+        ],
+        backgroundColor: ["#e9a23b", "#5b8c51"],
+        borderWidth: 0,
+      },
+    ],
+  };
+
+  const stats = [
+    { label: "Users", value: analytics?.totalUsers, icon: Users },
+    { label: "Contents", value: analytics?.totalContents, icon: FileText },
+    {
+      label: "Pending",
+      value: analytics?.totalPendingContributions,
+      icon: Clock,
+    },
+    {
+      label: "Approved",
+      value: analytics?.totalApprovedContributions,
+      icon: CheckCircle2,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-6 md:px-12">
-      <motion.h1
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-5xl font-bold text-gray-800 text-center mb-12"
-      >
-        Admin Dashboard
-      </motion.h1>
+    <div className="min-h-[calc(100vh-64px)] py-12">
+      <Container>
+        <PageHeader
+          title="Admin dashboard"
+          description="Overview and contribution moderation."
+        />
 
-      {loadingAnalytics ? (
-        <p className="text-center text-lg text-gray-500">
-          Loading analytics...
-        </p>
-      ) : error ? (
-        <p className="text-center text-lg text-red-500">{error}</p>
-      ) : (
-        analytics && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12"
-          >
-            {/* Analytics Cards */}
-            {[
-              {
-                label: "Total Users",
-                value: analytics.totalUsers,
-                bgColor: "bg-blue-500",
-              },
-              {
-                label: "Total Contents",
-                value: analytics.totalContents,
-                bgColor: "bg-green-500",
-              },
-              {
-                label: "Pending Contributions",
-                value: analytics.totalPendingContributions,
-                bgColor: "bg-yellow-500",
-              },
-              {
-                label: "Approved Contributions",
-                value: analytics.totalApprovedContributions,
-                bgColor: "bg-purple-500",
-              },
-            ].map(({ label, value, bgColor }, idx) => (
-              <motion.div
-                key={idx}
-                whileHover={{ scale: 1.05 }}
-                className={`p-6 rounded-lg shadow-lg text-white ${bgColor}`}
-              >
-                <h2 className="text-lg font-semibold">{label}</h2>
-                <p className="text-4xl font-bold">{value}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        )
-      )}
-
-      {/* Visual Analytics */}
-      <div className="bg-white shadow rounded-lg p-6 mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-gray-700">
-          Visual Analytics
-        </h2>
-        <div className="max-w-lg mx-auto">
-          <Pie data={chartData} />
+        {/* Stats */}
+        <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {stats.map((s) => (
+            <Card key={s.label} className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <s.icon size={20} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">
+                    {s.value ?? 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
-      </div>
 
-      {/* Contributions Section */}
-      <section className="mb-12">
-        <h2 className="text-3xl font-bold text-gray-700 mb-6">
-          Pending Contributions
-        </h2>
-        {pendingContributions.length === 0 ? (
-          <p className="text-center text-lg text-gray-500">
-            No pending contributions.
-          </p>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-4"
-          >
-            {pendingContributions.map((contribution) => (
-              <motion.div
-                key={contribution._id}
-                whileHover={{ scale: 1.02 }}
-                className="p-6 bg-white shadow rounded-lg flex justify-between items-center"
-              >
-                <div>
-                  <p className="text-gray-800">
-                    <strong>Banglish:</strong> {contribution.banglish_text}
-                  </p>
-                  <p className="text-gray-600">
-                    <strong>Bangla:</strong> {contribution.bangla_text}
-                  </p>
+        {/* Chart */}
+        <Card className="mt-6">
+          <CardBody>
+            <h2 className="text-lg font-bold text-foreground">Contributions</h2>
+            <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
+              <div className="h-52 w-52">
+                <Pie
+                  data={chartData}
+                  options={{ plugins: { legend: { display: false } } }}
+                />
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-secondary" />
+                  <span className="text-muted-foreground">
+                    Pending · {analytics?.totalPendingContributions || 0}
+                  </span>
                 </div>
-                <div className="flex gap-4">
-                  <button
-                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
-                    onClick={() => approveContribution(contribution._id)}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                    onClick={() => deleteContribution(contribution._id)}
-                  >
-                    Delete
-                  </button>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-3 w-3 rounded-full"
+                    style={{ background: "#5b8c51" }}
+                  />
+                  <span className="text-muted-foreground">
+                    Approved · {analytics?.totalApprovedContributions || 0}
+                  </span>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </section>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
 
-      {/* Approved Contributions Section */}
-      <section className="mb-12">
-        <h2 className="text-3xl font-bold text-gray-700 mb-6">
-          Approved Contributions
-        </h2>
-        {approvedContributions.length === 0 ? (
-          <p className="text-center text-lg text-gray-500">
-            No approved contributions.
-          </p>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-4"
-          >
-            {approvedContributions.map((contribution) => (
-              <motion.div
-                key={contribution._id}
-                whileHover={{ scale: 1.02 }}
-                className="p-6 bg-white shadow rounded-lg flex justify-between items-center"
-              >
-                <div>
-                  <p className="text-gray-800">
-                    <strong>Banglish:</strong> {contribution.banglish_text}
-                  </p>
-                  <p className="text-gray-600">
-                    <strong>Bangla:</strong> {contribution.bangla_text}
-                  </p>
-                </div>
-                <button
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                  onClick={() => deleteContribution(contribution._id)}
-                >
-                  Delete
-                </button>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </section>
+        {/* Pending */}
+        <section className="mt-10">
+          <h2 className="mb-4 font-balooda text-2xl font-bold text-foreground">
+            Pending contributions
+          </h2>
+          {pendingContributions.length === 0 ? (
+            <EmptyState icon={<Clock size={22} />} title="Nothing pending" />
+          ) : (
+            <div className="space-y-3">
+              {pendingContributions.map((c) => (
+                <Card key={c._id} className="p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-foreground">
+                        <span className="text-muted-foreground">Banglish:</span>{" "}
+                        {c.banglish_text}
+                      </p>
+                      <p className="font-bengali text-foreground">
+                        <span className="font-sans text-muted-foreground">
+                          Bangla:
+                        </span>{" "}
+                        {c.bangla_text}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => approveContribution(c._id)}>
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive"
+                        onClick={() => deleteContribution(c._id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Approved */}
+        <section className="mt-10">
+          <h2 className="mb-4 font-balooda text-2xl font-bold text-foreground">
+            Approved contributions
+          </h2>
+          {approvedContributions.length === 0 ? (
+            <EmptyState
+              icon={<CheckCircle2 size={22} />}
+              title="No approved contributions yet"
+            />
+          ) : (
+            <div className="space-y-3">
+              {approvedContributions.map((c) => (
+                <Card key={c._id} className="p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-foreground">
+                        <span className="text-muted-foreground">Banglish:</span>{" "}
+                        {c.banglish_text}
+                      </p>
+                      <p className="font-bengali text-foreground">
+                        <span className="font-sans text-muted-foreground">
+                          Bangla:
+                        </span>{" "}
+                        {c.bangla_text}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive"
+                      onClick={() => deleteContribution(c._id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      </Container>
     </div>
   );
 }
