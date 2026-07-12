@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+transformers==4.46.3
+huggingface_hub==0.26.5
+sentencepiece
