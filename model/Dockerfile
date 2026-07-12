@@ -11,8 +11,9 @@ ENV HOME=/home/user \
 WORKDIR /home/user/app
 
 COPY --chown=user requirements.txt .
-# CPU torch resolves to the right arch wheel (arm64 CPU on an Oracle A1 VM).
-RUN pip install --no-cache-dir --user -r requirements.txt
+# CPU-only torch (small + fast on x86; avoids the large CUDA build).
+RUN pip install --no-cache-dir --user torch --index-url https://download.pytorch.org/whl/cpu \
+ && pip install --no-cache-dir --user -r requirements.txt
 
 COPY --chown=user . .
 

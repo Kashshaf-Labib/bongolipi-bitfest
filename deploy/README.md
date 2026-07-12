@@ -1,51 +1,62 @@
 # Deploying the compute services (model + RAG + collab)
 
-This bundle runs all three backend services on **one host** with automatic
-HTTPS. It's designed for an **Oracle Cloud "Always Free" ARM VM**, but works on
-any Ubuntu box with Docker.
+This bundle runs all three backend services on **one Ubuntu VM** with automatic
+HTTPS. These steps use **AWS EC2** (works great with $200 of credit), but the
+bundle is host-agnostic — any Ubuntu box with Docker works.
 
 Caddy serves each service at an `sslip.io` hostname that resolves to your VM's
-public IP — so there is **no DNS to configure**:
+public IP, so there is **no DNS to configure**:
 
 | Service | URL |
 |---|---|
-| mBART model | `https://model.<VM_IP>.sslip.io` |
-| RAG server | `https://rag.<VM_IP>.sslip.io` |
-| Collab (WebSocket) | `wss://collab.<VM_IP>.sslip.io` |
+| mBART model | `https://model.<IP>.sslip.io` |
+| RAG server | `https://rag.<IP>.sslip.io` |
+| Collab (WebSocket) | `wss://collab.<IP>.sslip.io` |
 
-*(`<VM_IP>` written with dots, e.g. `model.140.238.1.2.sslip.io`.)*
-
----
-
-## 1. Create the VM (Oracle Always Free)
-
-1. Sign up at https://www.oracle.com/cloud/free/ (a card is used for identity;
-   Always-Free resources are never charged).
-2. **Compute → Instances → Create instance.**
-   - **Image:** Ubuntu 22.04.
-   - **Shape:** *Ampere* → **VM.Standard.A1.Flex**, e.g. **2 OCPU / 12 GB**
-     (4 OCPU / 24 GB is fine too — all Always Free).
-   - Add your **SSH public key**.
-   - Create, and note the **public IP**.
-
-> If A1 capacity is unavailable in your region, try another Availability Domain
-> or region, or retry later — ARM capacity comes and goes.
-
-3. SSH in: `ssh ubuntu@<VM_IP>`
+*(`<IP>` written with dots, e.g. `model.13.51.20.7.sslip.io`.)*
 
 ---
 
-## 2. Open the firewall (two layers)
+## 1. Launch an EC2 instance
 
-**a) Oracle Security List / NSG** (in the console): open ingress **TCP 80** and
-**443** from `0.0.0.0/0` on the VM's subnet (Networking → VCN → Security Lists →
-Add Ingress Rules).
+AWS Console → **EC2 → Launch instance**:
+- **Name:** bongolipi
+- **AMI:** Ubuntu Server 22.04 LTS
+- **Instance type:** **t3.large** (8 GB RAM) — recommended.
+  *To stretch credit you can use **t3.medium** (4 GB) and add swap (see below).*
+- **Key pair:** create one and download the `.pem` (for SSH).
+- **Network settings → Edit → Security group**, allow inbound:
+  - **SSH (22)** from *My IP*
+  - **HTTP (80)** from *Anywhere* (0.0.0.0/0)
+  - **HTTPS (443)** from *Anywhere* (0.0.0.0/0)
+- **Storage:** change the root volume to **30 GiB** (gp3).
+- **Launch instance.**
 
-**b) The VM's own iptables** (Oracle Ubuntu images block everything but SSH):
+**Give it a stable IP** (important — the URLs embed the IP): EC2 → *Elastic IPs*
+→ **Allocate**, then **Associate** it with this instance. Use that Elastic IP as
+`<IP>` everywhere below.
+
+> AWS's security group is the firewall — no iptables setup needed (unlike Oracle).
+
+**Cost with credit:** t3.large ≈ $60/mo, so ~3 months on $200. **Stop** the
+instance when you're not using it (EC2 → Instance state → Stop) to pay only for
+storage (~$2–3/mo); the Elastic IP keeps the address stable.
+
+---
+
+## 2. Connect
+
 ```bash
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
-sudo netfilter-persistent save
+chmod 400 your-key.pem                 # mac/linux
+ssh -i your-key.pem ubuntu@<IP>
+```
+*(Windows: use the `.pem` with `ssh -i` in PowerShell, or PuTTY.)*
+
+**(Optional) add swap** — recommended if you chose t3.medium (4 GB):
+```bash
+sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
 ---
@@ -69,12 +80,12 @@ cp .env.example .env
 nano .env
 ```
 Fill in `.env`:
-- `VM_IP` — the VM's public IP (with dots).
+- `VM_IP` — the Elastic IP (with dots).
 - `GROQ_API_KEY` — your Groq key.
 - `COLLAB_SECRET` — **must match** the app's `COLLAB_SECRET`.
 - `MONGODB_URI`, `DBNAME` — your Atlas connection.
 - `ALLOWED_ORIGINS` — your app origins, e.g.
-  `https://your-app.vercel.app,http://localhost:3000` (or leave `*` while testing).
+  `https://your-app.vercel.app,http://localhost:3000` (or `*` while testing).
 
 ---
 
@@ -83,10 +94,8 @@ Fill in `.env`:
 ```bash
 docker compose up -d --build
 ```
-The first build compiles PyTorch for ARM and can take **10–20 minutes**. The
-model then downloads (~2.4 GB) and loads on first boot (~1–2 min).
-
-Watch it come up:
+First build takes a few minutes. The model then downloads (~2.4 GB) and loads on
+first boot (~1–2 min). Watch it:
 ```bash
 docker compose ps
 docker compose logs -f model      # wait for "[model] ready on cpu"
@@ -97,11 +106,11 @@ docker compose logs -f model      # wait for "[model] ready on cpu"
 ## 6. Verify
 
 ```bash
-curl https://model.$VM_IP.sslip.io/        # {"status":"ok", ...}
-curl -X POST https://model.$VM_IP.sslip.io/banglish \
+curl https://model.$(grep VM_IP .env | cut -d= -f2).sslip.io/
+curl -X POST https://model.<IP>.sslip.io/banglish \
   -H "Content-Type: application/json" \
-  -d '{"text":"ajke amar mon onek bhalo"}'  # -> Bangla
-curl https://rag.$VM_IP.sslip.io/docs       # FastAPI docs
+  -d '{"text":"ajke amar mon onek bhalo"}'      # -> Bangla
+curl https://rag.<IP>.sslip.io/docs             # FastAPI docs
 ```
 The first HTTPS request triggers Caddy to fetch certificates (~10–30 s).
 
@@ -113,15 +122,15 @@ Set these in the Next.js app (Vercel **Environment Variables**, or
 `client/.env.local` for local dev), then redeploy / restart:
 
 ```
-NEXT_PUBLIC_BANGLISH_API=https://model.<VM_IP>.sslip.io
-NEXT_PUBLIC_PDF_QUERY_URL=https://rag.<VM_IP>.sslip.io
-NEXT_PUBLIC_COLLAB_URL=wss://collab.<VM_IP>.sslip.io
+NEXT_PUBLIC_BANGLISH_API=https://model.<IP>.sslip.io
+NEXT_PUBLIC_PDF_QUERY_URL=https://rag.<IP>.sslip.io
+NEXT_PUBLIC_COLLAB_URL=wss://collab.<IP>.sslip.io
 COLLAB_SECRET=<same value as deploy/.env>
 ```
 
 Now the converter + editors use your **mBART** model, the chatbot's PDF Q&A uses
-the **RAG** server, and collaboration connects to the **collab** server — all
-from one free VM.
+the **RAG** server, and collaboration connects to the **collab** server — all on
+one AWS instance.
 
 ---
 
@@ -130,7 +139,7 @@ from one free VM.
 ```bash
 docker compose logs -f            # all logs
 docker compose restart <svc>      # restart one service
-docker compose up -d --build      # apply code/.env changes (git pull first)
+git pull && docker compose up -d --build   # apply updates
 docker compose down               # stop everything
 ```
 
