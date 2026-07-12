@@ -9,11 +9,13 @@ import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { Loader } from "@/components/ui/Loader";
 import ContentManager from "@/components/dashboard/ContentManager";
+import SharedWithMe from "@/components/dashboard/SharedWithMe";
 import { cn } from "@/lib/utils";
 
-type Tab = "contents" | "account";
+type Tab = "contents" | "shared" | "account";
 const tabs: { key: Tab; label: string }[] = [
   { key: "contents", label: "My Contents" },
+  { key: "shared", label: "Shared with me" },
   { key: "account", label: "Account settings" },
 ];
 
@@ -23,13 +25,15 @@ function DashboardInner() {
   const [mounted, setMounted] = useState(false);
   const params = useSearchParams();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>(
-    params.get("tab") === "account" ? "account" : "contents",
-  );
+  const [tab, setTab] = useState<Tab>(() => {
+    const t = params.get("tab");
+    return t === "account" || t === "shared" ? t : "contents";
+  });
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
-    setTab(params.get("tab") === "account" ? "account" : "contents");
+    const t = params.get("tab");
+    setTab(t === "account" || t === "shared" ? t : "contents");
   }, [params]);
 
   if (!isLoaded) {
@@ -94,9 +98,9 @@ function DashboardInner() {
         </div>
 
         <div className="mt-8">
-          {tab === "contents" ? (
-            <ContentManager />
-          ) : (
+          {tab === "contents" && <ContentManager />}
+          {tab === "shared" && <SharedWithMe />}
+          {tab === "account" && (
             <div className="flex justify-center">
               <UserProfile
                 routing="hash"
