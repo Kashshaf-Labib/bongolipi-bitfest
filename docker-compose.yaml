@@ -17,6 +17,9 @@ services:
       - NEXT_PUBLIC_PDF_QUERY_URL=http://localhost:8000
       - NEXT_PUBLIC_COLLAB_URL=ws://localhost:1234
       - COLLAB_SECRET=${COLLAB_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
     depends_on:
       - mongo
       - server

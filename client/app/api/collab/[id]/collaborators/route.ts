@@ -2,6 +2,7 @@ import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/db/mongod";
 import { Content } from "@/db/models/Content";
+import { sendCollabInviteEmail } from "@/lib/email";
 
 // Invite a collaborator by email (owner only).
 export async function POST(
@@ -56,12 +57,33 @@ export async function POST(
       await content.save();
     }
 
+    // Best-effort invite email.
+    let emailSent = false;
+    try {
+      const owner = await client.users.getUser(userId);
+      const inviterName =
+        [owner.firstName, owner.lastName].filter(Boolean).join(" ") ||
+        "A Bongolipi user";
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+      const result = await sendCollabInviteEmail({
+        to: email,
+        inviterName,
+        docTitle: content.title,
+        docUrl: `${origin}/collab/${id}`,
+      });
+      emailSent = result.sent;
+    } catch (e) {
+      console.error(e);
+    }
+
     return NextResponse.json({
       userId: invitee.id,
       name:
         [invitee.firstName, invitee.lastName].filter(Boolean).join(" ") ||
         "User",
       image: invitee.imageUrl || "",
+      emailSent,
     });
   } catch (error) {
     console.error(error);
