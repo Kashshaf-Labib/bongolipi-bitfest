@@ -112,6 +112,7 @@ function CollabInner({
   const [users, setUsers] = useState<PresenceUser[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const dirtyRef = useRef(false);
   const seededRef = useRef(false);
 
@@ -208,6 +209,39 @@ function CollabInner({
     }, 5000);
     return () => clearInterval(t);
   }, [save]);
+
+  const translate = async () => {
+    if (!editor) return;
+    const selection = editor.state.selection;
+    if (!selection || selection.empty) {
+      toast.error("Please select some text to translate.");
+      return;
+    }
+    const { from, to } = selection;
+    const selectedText = editor.state.doc.textBetween(from, to, " ");
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inputText: selectedText }),
+      });
+      const data = await res.json();
+      if (data.banglaText) {
+        editor
+          .chain()
+          .focus()
+          .insertContentAt({ from, to }, data.banglaText)
+          .run();
+      } else {
+        toast.error("Could not translate.");
+      }
+    } catch {
+      toast.error("Could not translate.");
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const keepSelection = (e: React.MouseEvent) => e.preventDefault();
 
@@ -311,6 +345,14 @@ function CollabInner({
             onClick={() => editor.chain().focus().redo().run()}
           >
             ↪
+          </button>
+          <button
+            onMouseDown={keepSelection}
+            onClick={translate}
+            disabled={translating}
+            className="ml-auto bg-primary text-primary-foreground hover:!bg-primary/90"
+          >
+            {translating ? "Translating…" : "Translate"}
           </button>
         </div>
       )}
