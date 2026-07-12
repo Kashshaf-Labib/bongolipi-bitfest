@@ -1,6 +1,6 @@
 "use client";
 
-import { BANGLISH_API } from "@/lib/const";
+import { translateBanglish } from "@/lib/translate";
 import { ArrowRight, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { Container } from "@/components/ui/Container";
@@ -19,26 +19,7 @@ export default function Converter() {
       if (!banglish.trim()) return;
       setBangla("");
       setLoading(true);
-
-      let translated = "";
-      if (BANGLISH_API) {
-        const response = await fetch(`${BANGLISH_API}/banglish`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: banglish }),
-        });
-        const data = await response.json();
-        translated = data.generated_text;
-      } else {
-        const response = await fetch("/api/translate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ inputText: banglish }),
-        });
-        const data = await response.json();
-        translated = data.banglaText;
-      }
-      setBangla(translated || "");
+      setBangla(await translateBanglish(banglish));
     } catch (err) {
       alert("Something went wrong. Please try again later.");
       console.error(err);

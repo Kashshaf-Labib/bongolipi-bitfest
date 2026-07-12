@@ -10,6 +10,7 @@ import * as Y from "yjs";
 import toast from "react-hot-toast";
 import { Check, Wifi, WifiOff } from "lucide-react";
 import { COLLAB_URL } from "@/lib/const";
+import { translateBanglish } from "@/lib/translate";
 import { Loader } from "@/components/ui/Loader";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -221,18 +222,9 @@ function CollabInner({
     const selectedText = editor.state.doc.textBetween(from, to, " ");
     setTranslating(true);
     try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputText: selectedText }),
-      });
-      const data = await res.json();
-      if (data.banglaText) {
-        editor
-          .chain()
-          .focus()
-          .insertContentAt({ from, to }, data.banglaText)
-          .run();
+      const translated = await translateBanglish(selectedText);
+      if (translated) {
+        editor.chain().focus().insertContentAt({ from, to }, translated).run();
       } else {
         toast.error("Could not translate.");
       }

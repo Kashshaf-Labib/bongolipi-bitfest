@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useState } from "react";
 import Spinner from "@/components/common/Spinner";
+import { translateBanglish } from "@/lib/translate";
 
 const Tiptap = ({
   onContentChange,
@@ -40,13 +41,15 @@ const Tiptap = ({
     const { from, to } = selection;
     const selectedText = editor.state.doc.textBetween(from, to, " ");
     const translatedText = await fetchTranslation(selectedText);
-    editor.chain().focus().insertContentAt({ from, to }, translatedText).run();
+    if (translatedText) {
+      editor.chain().focus().insertContentAt({ from, to }, translatedText).run();
+    }
   };
 
   const fetchTranslation = async (text: string) => {
     try {
       setTranslationLoading(true);
-      return _fetchTranslation(text);
+      return await translateBanglish(text);
     } catch (error) {
       console.log(error);
       alert("Something went wrong. Please try again later.");
@@ -144,15 +147,3 @@ const Tiptap = ({
 };
 
 export default Tiptap;
-
-const _fetchTranslation = async (inputText: string) => {
-  const res = await fetch("/api/translate", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ inputText }),
-  });
-  const data = await res.json();
-  return data.banglaText;
-};
