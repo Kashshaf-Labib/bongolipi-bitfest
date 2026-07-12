@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Users, Link2, Copy, Check, X, Plus } from "lucide-react";
+import { Users, X, Plus, Mail } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Loader } from "@/components/ui/Loader";
 import { Input, Label } from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import Switch from "@/components/common/Switch";
 import CollaborativeEditor from "@/components/contents/CollaborativeEditor";
 import toast from "react-hot-toast";
 
@@ -17,7 +16,6 @@ type DocData = {
   title: string;
   content: string;
   isOwner: boolean;
-  linkAccess: boolean;
   collaborators: Collaborator[];
 };
 
@@ -29,14 +27,7 @@ export default function CollabPage() {
   const [sharePanel, setSharePanel] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const [linkAccess, setLinkAccess] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
-
-  useEffect(() => {
-    setShareUrl(window.location.href);
-  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -50,7 +41,6 @@ export default function CollabPage() {
         const d = await res.json();
         setData(d);
         setCollaborators(d.collaborators || []);
-        setLinkAccess(d.linkAccess);
       } catch (e) {
         console.error(e);
         setForbidden(true);
@@ -75,7 +65,11 @@ export default function CollabPage() {
           prev.some((c) => c.userId === d.userId) ? prev : [...prev, d],
         );
         setInviteEmail("");
-        toast.success("Collaborator added.");
+        toast.success(
+          d.emailSent
+            ? "Collaborator added and emailed."
+            : "Collaborator added.",
+        );
       } else {
         toast.error(d.error || "Could not add collaborator.");
       }
@@ -95,22 +89,6 @@ export default function CollabPage() {
     if (res.ok) {
       setCollaborators((prev) => prev.filter((c) => c.userId !== collaboratorId));
     }
-  };
-
-  const toggleLink = async (val: boolean) => {
-    setLinkAccess(val);
-    const res = await fetch(`/api/collab/${id}/link`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ linkAccess: val }),
-    });
-    if (!res.ok) setLinkAccess(!val);
-  };
-
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
   };
 
   if (loading) {
@@ -152,29 +130,6 @@ export default function CollabPage() {
         {data.isOwner && sharePanel && (
           <Card className="mt-4">
             <CardBody className="space-y-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="flex items-center gap-2 font-medium text-foreground">
-                    <Link2 size={16} /> Anyone with the link
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Signed-in users with this link can edit.
-                  </p>
-                </div>
-                <Switch
-                  checked={linkAccess}
-                  onChange={() => toggleLink(!linkAccess)}
-                  label=""
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Input readOnly value={shareUrl} className="text-sm" />
-                <Button variant="outline" onClick={copyLink}>
-                  {copied ? <Check size={16} /> : <Copy size={16} />}
-                </Button>
-              </div>
-
               <div>
                 <Label>Invite by email</Label>
                 <div className="flex items-center gap-2">
@@ -191,6 +146,11 @@ export default function CollabPage() {
                     <Plus size={16} /> Add
                   </Button>
                 </div>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Mail size={13} />
+                  They must have a Bongolipi account. We&apos;ll email them a
+                  link, and it appears in their &ldquo;Shared with me&rdquo;.
+                </p>
               </div>
 
               {collaborators.length > 0 && (

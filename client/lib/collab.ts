@@ -3,19 +3,16 @@
 export type CollabContent = {
   userId: string;
   collaborators?: string[];
-  linkAccess?: boolean;
 };
 
-/** A signed-in user may edit if they are the owner, an invited collaborator,
- *  or the document has link access enabled. */
+/** A signed-in user may edit if they are the owner or an invited collaborator. */
 export function canEditContent(
   content: CollabContent,
   userId: string | null | undefined,
 ): boolean {
   if (!userId) return false;
   if (content.userId === userId) return true;
-  if (content.collaborators?.includes(userId)) return true;
-  return !!content.linkAccess;
+  return !!content.collaborators?.includes(userId);
 }
 
 const COLORS = [

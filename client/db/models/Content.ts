@@ -9,7 +9,6 @@ export interface IContent {
   created_at: Date;
   upvotes: string[];
   collaborators: string[]; // Clerk user IDs invited to edit
-  linkAccess: boolean; // anyone signed-in with the link can edit
 }
 
 const ContentSchema = new Schema<IContent>({
@@ -21,7 +20,6 @@ const ContentSchema = new Schema<IContent>({
   created_at: { type: Date, default: Date.now },
   upvotes: { type: [String], default: [] },
   collaborators: { type: [String], default: [] },
-  linkAccess: { type: Boolean, default: false },
 });
 
 export const Content = models?.Content || model("Content", ContentSchema);

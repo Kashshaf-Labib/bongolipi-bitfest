@@ -44,7 +44,6 @@ export async function GET(
       title: content.title,
       content: content.content,
       isOwner: content.userId === userId,
-      linkAccess: !!content.linkAccess,
       collaborators,
     });
   } catch (error) {
