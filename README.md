@@ -14,6 +14,19 @@ independently deployable services.
 
 ---
 
+## ▶ Watch the demo (5-minute walkthrough)
+
+**[▶ Full feature walkthrough — Loom video](https://www.loom.com/share/94e112b650224756b6ca433631b4af24)**
+
+A guided tour of every feature: the fine-tuned Banglish→Bangla translation model,
+the human-in-the-loop annotation loop that retrains it, the RAG document chatbot,
+real-time collaborative editing, and the analytics dashboards — with the
+architecture and engineering decisions behind each.
+
+> New here? Start with the video above, then read on for how it's all built.
+
+---
+
 ## Table of contents
 
 1. [System architecture](#system-architecture)
